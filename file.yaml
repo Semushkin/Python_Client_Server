@@ -1,0 +1,9 @@
+list:
+- data_1
+- data_2
+- data_3
+integer: 3
+dictionary:
+  data_1: 34€
+  data_2: 3€
+  data_3: 45€

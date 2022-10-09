@@ -1,0 +1,67 @@
+{
+    "orders": [
+        {
+            "item": "Printer",
+            "quantity": "10",
+            "price": "600.00",
+            "buyer": "Ivanov I.I.",
+            "date": "10.02.2022"
+        },
+        {
+            "item": "Monitor",
+            "quantity": "10",
+            "price": "5000.00",
+            "buyer": "Petrov P.P.",
+            "date": "05.05.2022"
+        },
+        {
+            "item": "Laptop",
+            "quantity": "10",
+            "price": "15600.00",
+            "buyer": "Sidorov S.S.",
+            "date": "17.08.2022"
+        },
+        {
+            "item": "Printer",
+            "quantity": "10",
+            "price": "600.00",
+            "buyer": "Ivanov I.I.",
+            "date": "10.02.2022"
+        },
+        {
+            "item": "Monitor",
+            "quantity": "10",
+            "price": "5000.00",
+            "buyer": "Petrov P.P.",
+            "date": "05.05.2022"
+        },
+        {
+            "item": "Laptop",
+            "quantity": "10",
+            "price": "15600.00",
+            "buyer": "Sidorov S.S.",
+            "date": "17.08.2022"
+        },
+        {
+            "item": "Printer",
+            "quantity": "10",
+            "price": "600.00",
+            "buyer": "Ivanov I.I.",
+            "date": "10.02.2022"
+        },
+        {
+            "item": "Monitor",
+            "quantity": "10",
+            "price": "5000.00",
+            "buyer": "Petrov P.P.",
+            "date": "05.05.2022"
+        },
+        {
+            "item": "Laptop",
+            "quantity": "10",
+            "price": "15600.00",
+            "buyer": "Sidorov S.S.",
+            "date": "17.08.2022"
+        }
+    ]
+}
