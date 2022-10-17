@@ -13,12 +13,22 @@ import sys
 from common.variables import DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE, ERROR, ACTION, ANSWER
 from socket import socket, AF_INET, SOCK_STREAM
 from common.utils import receive_message, send_message
+import logging
+from logs.server_log_config import logs
+import inspect
 
 
+log = logging.getLogger('app.server')
+MOD = inspect.stack()[0][1].split("/")[-1]
+
+
+@logs
 def validation(data):
     if ACTION in data and data[ACTION] == PRESENCE:
         return {RESPONSE: 200, ANSWER: 'Hello Client'}
-    return {RESPONSE: 400, ERROR: 'Bad Request'}
+    else:
+        log.warning(f'{MOD} - клиенту отправлен код 400 в функции - "{inspect.stack()[0][3]}"')
+        return {RESPONSE: 400, ERROR: 'Bad Request'}
 
 
 def main():
@@ -31,7 +41,8 @@ def main():
         if port < 1027 or port > 65535:
             raise IndexError
     except IndexError:
-        print('Указан не верный номер порта')
+        log.error(f'{MOD} - указан не верный номер порта в функции - "{inspect.stack()[0][3]}"')
+        #print('Указан не верный номер порта')
         sys.exit(1)
 
     try:
@@ -40,7 +51,8 @@ def main():
         else:
             ip = DEFAULT_IP
     except IndexError:
-        print('Указан не верный ip адрес')
+        log.error(f'{MOD} - указан не верный ip адрес в функции - "{inspect.stack()[0][3]}"')
+        #print('Указан не верный ip адрес')
         sys.exit(1)
 
     connection = socket(AF_INET, SOCK_STREAM)
@@ -53,11 +65,14 @@ def main():
         try:
             data = receive_message(client)
             print(data)
+            log.info(f'{MOD} - получено сообщение от клиента в функции - "{inspect.stack()[0][3]}"')
             message = validation(data)
             send_message(client, message)
+            log.info(f'{MOD} - отпрален ответ клиенту в функции - "{inspect.stack()[0][3]}"')
             client.close()
         except ValueError:
-            print('Получено некорректное сообщение')
+            log.error(f'{MOD} - получено некорректное сооьщение от клиента в функции - "{inspect.stack()[0][3]}"')
+            #print('Получено некорректное сообщение')
             client.close()
 
 
