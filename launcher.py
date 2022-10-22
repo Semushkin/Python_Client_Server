@@ -25,4 +25,4 @@ while True:
     if request =='exit':
         break
 
-    print('Введена не верная команда')
+    #print('Введена не верная команда')
