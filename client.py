@@ -70,7 +70,6 @@ def arg_data():
 
 
 def main():
-    i = 1
     ip, port, status, nickname = arg_data()
     connection = socket(AF_INET, SOCK_STREAM)
 

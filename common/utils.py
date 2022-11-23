@@ -18,9 +18,5 @@ def send_message(sock, data):
     sock.send(code_message)
 
 
-def receive_message2(client):
-    print('Запуск get_message')
-    data = client.recv(MAX_DATA_LENGTH)
-    print(f'Получили дату recv, data: {data}' )
-    return data
+
 
