@@ -11,101 +11,107 @@ import argparse
 import select
 
 
-logs_server = logging.getLogger('app.server')
-MOD = inspect.stack()[0][1].split("/")[-1]
+class Server:
+    def __init__(self, ip, port):
+        self.ip = ip
+        self.port = port
+        self.check_port()
+        self.clients = []
+        self.messages = []
+        self.connection = socket(AF_INET, SOCK_STREAM)
+        self.connection.bind((self.ip, self.port))
+        print(f'Запущен сервер с праметрами: ip = "{self.ip}", port = {self.port}')
+        self.connection.settimeout(0.5)
+        self.connection.listen(5)
+        self.listen()
 
+    def check_port(self):
+        if self.port < 1027 or self.port > 65535:
+            print('Ошибка!!! Не верный номер порта. Должен быть больше 1027 и меньше 65535')
+            sys.exit(1)
 
-@log
-def validation(data):
-    if ACTION in data and data[ACTION] == PRESENCE:
-        return {RESPONSE: 200, NICKNAME: data[NICKNAME]}
-    elif ACTION in data and data[ACTION] == MESSAGE:
-        return {ACTION: MESSAGE, NICKNAME: data[NICKNAME], TEXT: data[TEXT]}
-    else:
-        logs_server.warning(f'{MOD} - клиенту отправлен код 400 в функции - "{inspect.stack()[0][3]}"')
-        return {RESPONSE: 400, ERROR: 'Bad Request'}
+    def pr(self):
+        return f'ip = {self.ip}, port = {self.port}'
 
-
-@log
-def arg_data():
-    parse = argparse.ArgumentParser()
-    parse.add_argument('-a', default=DEFAULT_IP, help='IP adress', nargs='?')
-    parse.add_argument('-p', default=DEFAULT_PORT, help='PORT', nargs='?')
-    namespace = parse.parse_args(sys.argv[1:])
-    ip = namespace.a
-    port = namespace.p
-
-    if port < 1027 or port > 65535:
-        logs_server.error(f'{MOD} - Указан не верный номер порта при запуске сервера')
-        sys.exit(1)
-    return ip, port
-
-
-@log
-def create_message(client_from, text):
-    return {
-        ACTION: MESSAGE,
-        NICKNAME: client_from,
-        TEXT: text
-    }
-
-
-def main():
-    ip, port = arg_data()
-    clients = []
-    messages = []
-    connection = socket(AF_INET, SOCK_STREAM)
-    connection.bind((ip, port))
-    print(f'Запущен сервер с праметрами: ip = "{ip}", port = {port}')
-    connection.settimeout(0.5)
-    connection.listen(5)
-    while True:
-        try:
-            client, client_address = connection.accept()
-        except OSError:
-            pass
-        else:
-            data = receive_message(client)
-            data = validation(data)
-            if data[RESPONSE] != 400:
-                print(f'Подключился клиент {data[NICKNAME]}')
-                logs_server.info(f'Установлено соединения с клиентом "{data[NICKNAME]}", с адресом {client_address}')
-                send_message(client, {RESPONSE: 200})  # Отправка 200
-                clients.append(client)
+    def listen(self):
+        while True:
+            try:
+                client, client_address = self.connection.accept()
+            except OSError:
+                pass
             else:
-                logs_server.error(f'Неудачная попытка соединения с клиентом {client}, с адресом {client_address}')
+                data = self.validation(receive_message(client))
+                if data[RESPONSE] != 400:
+                    print(f'Подключился клиент {data[NICKNAME]}')
+                    logs_server.info(
+                        f'Установлено соединения с клиентом "{data[NICKNAME]}", с адресом {client_address}')
+                    send_message(client, {RESPONSE: 200})  # Отправка 200
+                    self.clients.append(client)
+                else:
+                    logs_server.error(f'Неудачная попытка соединения с клиентом {client}, с адресом {client_address}')
+            self.receive()
 
+    def receive(self):
         receive_data_lst = []
         send_data_lst = []
         errors_lst =[]
         try:
-            if clients:
-                receive_data_lst, send_data_lst, errors_lst = select.select(clients, clients, [], 0)
+            if self.clients:
+                receive_data_lst, send_data_lst, errors_lst = select.select(self.clients, self.clients, [], 0)
         except OSError:
             pass
         if receive_data_lst:
             for client_m in receive_data_lst:
                 try:
                     data = receive_message(client_m)
-                    data = validation(data)
+                    data = self.validation(data)
                     if data[ACTION] == MESSAGE:
-                        messages.append((data[NICKNAME], data[TEXT]))
+                        self.messages.append((data[NICKNAME], data[TEXT]))
                         logs_server.info(f'Получено сообщение от клиента {data[NICKNAME]}')
                 except:
-                    logs_server.info(f'{MOD} - клиент {client_m} отключился')
-                    clients.remove(client_m)
+                    logs_server.info(f'{MOD} - клиент {client_m} отключился, при попытке получения сообщения')
+                    self.clients.remove(client_m)
 
-        if messages and send_data_lst:
-            message = create_message(messages[0][0], messages[0][1])
-            del messages[0]
+        if self.messages and send_data_lst:
+            message = self.create_message(self.messages[0][0], self.messages[0][1])
+            del self.messages[0]
             for client_s in send_data_lst:
-                logs_server.info(f'получено сообщение от клиента {client_s}: {messages}')
+                logs_server.info(f'получено сообщение от клиента {client_s}: {self.messages}')
                 try:
                     send_message(client_s, message)
                 except:
-                    logs_server.info(f'{MOD} - клиент {client_s} отключился')
+                    logs_server.info(f'{MOD} - клиент {client_s} отключился, при попытке отправке сообщения')
                     client_s.close()
-                    clients.remove(client_s)
+                    self.clients.remove(client_s)
+
+    @staticmethod
+    def validation(data):
+        if ACTION in data and data[ACTION] == PRESENCE:
+            return {RESPONSE: 200, NICKNAME: data[NICKNAME]}
+        elif ACTION in data and data[ACTION] == MESSAGE:
+            return {ACTION: MESSAGE, NICKNAME: data[NICKNAME], TEXT: data[TEXT]}
+        else:
+            logs_server.warning(f'{MOD} - клиенту отправлен код 400 в функции - "{inspect.stack()[0][3]}"')
+            return {RESPONSE: 400, ERROR: 'Bad Request'}
+
+    @staticmethod
+    def create_message(client_from, text):
+        return {
+            ACTION: MESSAGE,
+            NICKNAME: client_from,
+            TEXT: text
+        }
+
+
 
 if __name__ == '__main__':
-    main()
+
+    logs_server = logging.getLogger('app.server')
+    MOD = inspect.stack()[0][1].split("/")[-1]
+
+    parse = argparse.ArgumentParser()
+    parse.add_argument('-a', default=DEFAULT_IP, help='IP adress', nargs='?')
+    parse.add_argument('-p', default=DEFAULT_PORT, help='PORT', type=int, nargs='?')
+    namespace = parse.parse_args(sys.argv[1:])
+
+    serv = Server(namespace.a, namespace.p)
