@@ -9,9 +9,10 @@ from common.utils import send_message, receive_message
 import logs.client_log_config
 from logs.decor import log
 import inspect
+from metaclasses import ClientVerifier
 
 
-class Client:
+class Client(metaclass=ClientVerifier):
     def __init__(self, ip, port, status, nickname):
         self.ip = ip
         self.port = port
@@ -41,7 +42,7 @@ class Client:
             print('Ошибка получения ответа от сервера!!!')
             sys.exit(1)
         else:
-            if self.status == 'listen':
+            if self.status == 'receive':
                 self.receive()
             elif self.status == 'send':
                 self.send()
@@ -86,7 +87,7 @@ if __name__ == '__main__':
     parse = argparse.ArgumentParser()
     parse.add_argument('-i', default=DEFAULT_IP, help='IP adress', nargs='?')
     parse.add_argument('-p', default=DEFAULT_PORT, help='PORT', type=int, nargs='?')
-    parse.add_argument('-s', default='listen', help='status: "listen" or "send"', nargs='?')
+    parse.add_argument('-s', default='receive', help='status: "receive" or "send"', nargs='?')
     parse.add_argument('-n', default='anonymous', help='nickname', nargs='?')
     namespace = parse.parse_args(sys.argv[1:])
     ip = namespace.i

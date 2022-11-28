@@ -1,3 +1,4 @@
+
 import sys
 from common.variables import DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE, ERROR, ACTION, \
     ANSWER, MESSAGE, FROM, NICKNAME, TEXT
@@ -9,9 +10,12 @@ import logs.server_log_config
 import inspect
 import argparse
 import select
+from metaclasses import ServerVerifier
+from descriptrs import Port
 
 
-class Server:
+class Server(metaclass=ServerVerifier):
+    port = Port()
     def __init__(self, ip, port):
         self.ip = ip
         self.port = port
@@ -23,7 +27,7 @@ class Server:
         print(f'Запущен сервер с праметрами: ip = "{self.ip}", port = {self.port}')
         self.connection.settimeout(0.5)
         self.connection.listen(5)
-        self.listen()
+        self.wait_message()
 
     def check_port(self):
         if self.port < 1027 or self.port > 65535:
@@ -33,7 +37,7 @@ class Server:
     def pr(self):
         return f'ip = {self.ip}, port = {self.port}'
 
-    def listen(self):
+    def wait_message(self):
         while True:
             try:
                 client, client_address = self.connection.accept()
