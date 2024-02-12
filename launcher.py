@@ -28,14 +28,15 @@ while True:
             PROCESS.append(subprocess.Popen('python server.py', creationflags=subprocess.CREATE_NEW_CONSOLE))
             PROCESS.append(subprocess.Popen('python client.py -s send', creationflags=subprocess.CREATE_NEW_CONSOLE))
             PROCESS.append(subprocess.Popen('python client.py', creationflags=subprocess.CREATE_NEW_CONSOLE))
+            PROCESS.append(subprocess.Popen('python client.py', creationflags=subprocess.CREATE_NEW_CONSOLE))
         else:
             PROCESS.append(process('server.py'))
             sleep(0.5)
-            PROCESS.append(process('client.py -s send'))
+            PROCESS.append(process('client.py -s send -n John'))
             sleep(0.5)
-            PROCESS.append(process('client.py'))
+            PROCESS.append(process('client.py -n Sam'))
             sleep(0.5)
-            PROCESS.append(process('client.py'))
+            PROCESS.append(process('client.py -n Robert'))
     if request == 'stop':
         while PROCESS:
             print('del')

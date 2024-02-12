@@ -6,6 +6,7 @@ TEXT = 'text'
 RESPONSE = 'response'
 MESSAGE = 'message'
 FROM = 'from'
+TO = 'to'
 NICKNAME = 'nickname'
 ERROR = 'error'
 DEFAULT_PORT = 7777
