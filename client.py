@@ -5,17 +5,50 @@ import argparse
 import time
 from socket import socket, AF_INET, SOCK_STREAM
 from common.variables import DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE, ERROR, ACTION, TEXT, \
-    ANSWER, MESSAGE, NICKNAME, FROM, TO
+    ANSWER, MESSAGE, NICKNAME, FROM, TO, EXIT
 from common.utils import send_message, receive_message, receive_message2
 import logs.client_log_config
 from logs.decor import log
 import inspect
 from threading import Thread
+from metaclasses import ClientVerifier, ServerVerifier
 
 
 logs_client = logging.getLogger('app.client')
 
 MOD = inspect.stack()[0][1].split("/")[-1]
+
+class Client(Thread, metaclass=ClientVerifier):
+    def __init__(self, nickname, connection):
+        self.nickname = nickname
+        self.connection = connection
+        super().__init__()
+
+class ClientSender(Client):
+    def run(self):
+        print('----------------'
+              'Команды:\n'
+              'message - Написать сообщение\n'
+              'exit - Выйти\n'
+              '----------------')
+        while True:
+            command = input('Введите команду:')
+            if command == 'message':
+                to = input('Введите получателя:')
+                message = input('Введите сообщение:')
+                message = create_message(MESSAGE, self.nickname, message, to)
+                send_message(self.connection, message)
+            elif command == 'exit':
+                message = create_message(EXIT, self.nickname)
+                send_message(self.connection, message)
+                break
+
+
+class ClientReceive(Client):
+    def run(self):
+        while True:
+            message = validation(receive_message(self.connection))
+            print(f'\nПолучно сообщение от {message[NICKNAME]}: {message[TEXT]}')
 
 
 @log
@@ -37,6 +70,8 @@ def create_message(action, nickname, text='', to = ''):
         return {ACTION: PRESENCE, NICKNAME: nickname}
     elif action == MESSAGE:
         return {ACTION: MESSAGE, NICKNAME: nickname, TEXT: text, TO: to}
+    elif action == EXIT:
+        return {ACTION: EXIT, NICKNAME: nickname}
 
 
 @log
@@ -71,7 +106,6 @@ def arg_data():
 
 
 def main():
-    i = 1
     ip, port, status, nickname = arg_data()
     connection = socket(AF_INET, SOCK_STREAM)
 
@@ -84,7 +118,7 @@ def main():
         logs_client.info(f'{MOD} - отправлено собщение серверу в функции "{inspect.stack()[0][3]}"')
     except:
         logs_client.critical(f'{MOD} - Ошибка ссоединения с сервером!!!')
-
+        exit(1)
 
     # Получение подтверждения о подключении
     try:
@@ -94,13 +128,14 @@ def main():
         logs_client.info(f'{MOD} - получен ответ сервера в функции "{inspect.stack()[0][3]}"')
     except (ValueError, json.JSONDecodeError):
         logs_client.error(f'{MOD} - не верный формат полученного сообщения в функции - "{inspect.stack()[0][3]}"')
+        exit(1)
     else:
-        receiver = Thread(target=message_from_server, args=(connection,NICKNAME))
+        receiver = ClientReceive(nickname, connection)
         receiver.daemon = True
         receiver.start()
 
-        commands = Thread(target=user_commands, args=(connection,nickname))
-        commands.daemon =True
+        commands = ClientSender(nickname, connection)
+        commands.daemon = True
         commands.start()
 
         while True:
@@ -108,29 +143,6 @@ def main():
             if receiver.is_alive() and commands.is_alive():
                 continue
             break
-
-
-""
-def user_commands(connection, nickname):
-    print('----------------'
-          'Команды:\n'
-          'message - Написать сообщение\n'
-          'exit - Выйти\n'
-          '----------------')
-    while True:
-        command = input('Введите команду:')
-        if command == 'message':
-            to = input('Введите получателя:')
-            message = input('Введите сообщение:')
-            message = create_message(MESSAGE, nickname, message, to)
-            send_message(connection, message)
-        elif command == 'exit':
-            break
-
-def message_from_server(connection, username):
-    while True:
-        message = validation(receive_message(connection))
-        print(f'\nПолучно сообщение от {message[NICKNAME]}: {message[TEXT]}')
 
 
 if __name__ == '__main__':

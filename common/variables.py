@@ -1,5 +1,6 @@
 ENCODING = 'utf-8'
 PRESENCE = 'presence'
+EXIT = 'exit'
 ACTION = 'action'
 ANSWER = 'answer'
 TEXT = 'text'
