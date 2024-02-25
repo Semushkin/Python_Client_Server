@@ -13,3 +13,4 @@ ERROR = 'error'
 DEFAULT_PORT = 7777
 DEFAULT_IP = ''
 MAX_DATA_LENGTH = 1024
+DATABASE = 'sqlite:///database.db3'

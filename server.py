@@ -11,6 +11,8 @@ import argparse
 import select
 from metaclasses import ServerVerifier
 from descriptrs import Port
+from threading import Thread
+from database_server import DataBase
 
 
 logs_server = logging.getLogger('app.server')
@@ -28,11 +30,12 @@ def arg_data():
     return ip, port
 
 
-class Server(metaclass=ServerVerifier):
+class Server(Thread, metaclass=ServerVerifier):
     port = Port()
     def __init__(self, ip, port):
         self.ip = ip
         self.port = port
+        self.database = DataBase()
         self.clients = []
         self.messages = []
         self.clients_name = dict()  # Список сокетов с именами клиентов. {client_name: client_socket}
@@ -41,7 +44,8 @@ class Server(metaclass=ServerVerifier):
         print(f'Запущен сервер с праметрами: ip = "{self.ip}", port = {self.port}')
         self.connection.settimeout(0.5)
         self.connection.listen(5)
-        self.run()
+        # self.run()
+        super().__init__()
 
     def run(self):
         while True:
@@ -55,6 +59,7 @@ class Server(metaclass=ServerVerifier):
                 if data[RESPONSE] != 400:
                     self.clients_name[data[NICKNAME]] = client
                     print(f'Подключился клиент {data[NICKNAME]}')
+                    self.database.client_entry(data[NICKNAME], client_address[0])
                     logs_server.info(f'Установлено соединения с клиентом "{data[NICKNAME]}", с адресом {client_address}')
                     send_message(client, {RESPONSE: 200})  # Отправка 200
                     self.clients.append(client)
@@ -81,11 +86,13 @@ class Server(metaclass=ServerVerifier):
                         elif data[ACTION] == EXIT:
                             print(f'Пользователь {data[NICKNAME]} отключился')
                             logs_server.info(f'Пользователь {data[NICKNAME]} отключился')
+                            self.database.client_exit(data[NICKNAME])
                             self.clients.remove(client_m)
                             del self.clients_name[data[NICKNAME]]
                     except Exception as e:
                         logs_server.info(f'{MOD} - Ошибка получения сообщения от {client_m}; Ошибка:{e}')
                         logs_server.info(f'{MOD} - клиент {client_m} отключился')
+                        self.database.client_exit(data[NICKNAME])
                         self.clients.remove(client_m)
                         del self.clients_name[data[NICKNAME]]
             # Отправка сообщений
@@ -98,6 +105,7 @@ class Server(metaclass=ServerVerifier):
                 except Exception as e:
                     logs_server.info(f'{MOD} - Ошибка отправки сообщения для {self.clients_name[message[2]]}; Ошибка:{e}')
                     logs_server.info(f'{MOD} - клиент {self.clients_name[message[2]]} отключился')
+                    self.database.client_exit(data[NICKNAME])
                     self.clients_name[message[2]].close()
                     del self.clients_name[message[2]]
             self.messages.clear()
@@ -124,7 +132,46 @@ class Server(metaclass=ServerVerifier):
             TEXT: text
         }
 
+    def show_history(self):
+        print('-------------------------История--------------------------------')
+        data = self.database.get_history()
+        if data:
+            for item in data:
+                print(f'Клиент: {item[0]}; с адресом ip: {item[1]}; вход: {item[2]}')
+        else:
+            print('Нет истории подключений')
+        print('----------------------------------------------------------------')
+
+    def show_active_client(self):
+        print('-------------------Пользователи онлайн--------------------------')
+        data = self.database.get_active_list()
+        if data:
+            for item in data:
+                print(f'Клиент: {item[0]}; с адресом ip: {item[1]}')
+        else:
+            print('Нет подключенных пользователей')
+        print('----------------------------------------------------------------')
+
 if __name__ == '__main__':
-    #main()
     ip, port = arg_data()
     server = Server(ip, port)
+    server.daemon = True
+    server.start()
+
+    print('------------------Команды----------------------------')
+    print('active - Список пользователей онлайн')
+    print('history - История входов пользователей')
+    print('exit - Выход')
+    print('-------------------------------------------------')
+
+    while True:
+        command = input('Введите команду:')
+        if command == 'active':
+            server.show_active_client()
+        elif command == 'history':
+            server.show_history()
+        elif command == 'exit':
+            break
+
+
+
