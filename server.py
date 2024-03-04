@@ -1,3 +1,4 @@
+import os.path
 import sys
 from common.variables import DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE, ERROR, ACTION, \
     ANSWER, MESSAGE, FROM, NICKNAME, TEXT, TO, EXIT
@@ -11,12 +12,18 @@ import argparse
 import select
 from metaclasses import ServerVerifier
 from descriptrs import Port
-from threading import Thread
+from threading import Thread, Lock
 from database_server import DataBase
-
+from PyQt5.QtWidgets import QApplication, QMessageBox
+from server_gui import MainWindow, HistoryWindow, ConfigWindow, create_stat_model, create_connections_model
+import configparser
+from PyQt5.QtCore import QTimer
 
 logs_server = logging.getLogger('app.server')
 MOD = inspect.stack()[0][1].split("/")[-1]
+
+new_connection = False
+conflag_lock = Lock()
 
 @log
 def arg_data():
@@ -32,10 +39,11 @@ def arg_data():
 
 class Server(Thread, metaclass=ServerVerifier):
     port = Port()
-    def __init__(self, ip, port):
+    def __init__(self, ip, port, database):
         self.ip = ip
         self.port = port
-        self.database = DataBase()
+        #self.database = DataBase()
+        self.database = database
         self.clients = []
         self.messages = []
         self.clients_name = dict()  # Список сокетов с именами клиентов. {client_name: client_socket}
@@ -48,6 +56,7 @@ class Server(Thread, metaclass=ServerVerifier):
         super().__init__()
 
     def run(self):
+        global new_connection
         while True:
             try:
                 client, client_address = self.connection.accept()
@@ -59,6 +68,8 @@ class Server(Thread, metaclass=ServerVerifier):
                 if data[RESPONSE] != 400:
                     self.clients_name[data[NICKNAME]] = client
                     print(f'Подключился клиент {data[NICKNAME]}')
+                    with conflag_lock:
+                        new_connection = True
                     self.database.client_entry(data[NICKNAME], client_address[0])
                     logs_server.info(f'Установлено соединения с клиентом "{data[NICKNAME]}", с адресом {client_address}')
                     send_message(client, {RESPONSE: 200})  # Отправка 200
@@ -95,6 +106,8 @@ class Server(Thread, metaclass=ServerVerifier):
                         self.database.client_exit(data[NICKNAME])
                         self.clients.remove(client_m)
                         del self.clients_name[data[NICKNAME]]
+                        with conflag_lock:
+                            new_connection = True
             # Отправка сообщений
             for message in self.messages:
                 if message[2] not in self.clients_name.keys(): # Проверяем, есть ли пользователь с таким Именем
@@ -152,26 +165,94 @@ class Server(Thread, metaclass=ServerVerifier):
             print('Нет подключенных пользователей')
         print('----------------------------------------------------------------')
 
+
+
 if __name__ == '__main__':
+
+    config = configparser.ConfigParser()
+    path = os.path.dirname(os.path.realpath(__file__))
+    config.read(f"{path}/{'server.ini'}")
+    database = DataBase()
+
     ip, port = arg_data()
-    server = Server(ip, port)
+    server = Server(ip, port, database)
     server.daemon = True
     server.start()
 
-    print('------------------Команды----------------------------')
-    print('active - Список пользователей онлайн')
-    print('history - История входов пользователей')
-    print('exit - Выход')
-    print('-------------------------------------------------')
+    server_app = QApplication(sys.argv)
+    main_window = MainWindow()
+    main_window.statusBar().showMessage('Working')
 
-    while True:
-        command = input('Введите команду:')
-        if command == 'active':
-            server.show_active_client()
-        elif command == 'history':
-            server.show_history()
-        elif command == 'exit':
-            break
+    def connection_update():
+        global new_connection
+        if new_connection:
+            main_window.active_clients_table.setModel(create_connections_model(database))
+            main_window.active_clients_table.resizeColumnsToContents()
+            main_window.active_clients_table.resizeRowsToContents()
+            with conflag_lock:
+                new_connection = False
+
+    def show_statistics():
+        global stat_window
+        stat_window = HistoryWindow()
+        stat_window.history_table.setModel(create_stat_model(database))
+        stat_window.history_table.resizeColumnsToContents()
+        stat_window.history_table.resizeRowsToContents()
+
+    def server_config():
+        global config_window
+        config_window = ConfigWindow()
+        config_window.db_path.insert(config['SETTINGS']['Database_path'])
+        config_window.db_file.insert(config['SETTINGS']['Database_file'])
+        config_window.port.insert(config['SETTINGS']['Default_port'])
+        config_window.ip.insert(config['SETTINGS']['Listen_Address'])
+        config_window.save_btn.clicked.connect(save_server_config)
+
+
+    def save_server_config():
+        global config_window
+        message = QMessageBox()
+        config['SETTINGS']['Database_path'] = config_window.db_path.text()
+        config['SETTINGS']['Database_file'] = config_window.db_file.text()
+        try:
+            port = int(config_window.port.text())
+        except ValueError:
+            message.warning(config_window, 'Ошибка', 'Порт должен быть числом')
+        else:
+            config['SETTINGS']['Listen_Address'] = config_window.ip.text()
+            if 1023 < port < 65536:
+                config['SETTINGS']['Default_port'] = str(port)
+                with open('server.ini', 'w') as conf:
+                    config.write(conf)
+                    message.information(config_window, 'OK', 'Настройки успешно сохранены!')
+            else:
+                message.warning(config_window, 'Ошибка', 'Порт должен быть от 1024 до 65536')
+
+    timer = QTimer()
+    timer.timeout.connect(connection_update)
+    timer.start(1000)
+
+    main_window.refresh_button.triggered.connect(connection_update)
+    main_window.show_history_button.triggered.connect(show_statistics)
+    main_window.config_btn.triggered.connect(server_config)
+
+    server_app.exec_()
+
+
+    # print('------------------Команды----------------------------')
+    # print('active - Список пользователей онлайн')
+    # print('history - История входов пользователей')
+    # print('exit - Выход')
+    # print('-------------------------------------------------')
+    #
+    # while True:
+    #     command = input('Введите команду:')
+    #     if command == 'active':
+    #         server.show_active_client()
+    #     elif command == 'history':
+    #         server.show_history()
+    #     elif command == 'exit':
+    #         break
 
 
 

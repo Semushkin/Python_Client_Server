@@ -15,8 +15,8 @@ class DataBase:
         def __init__(self, nickname):
             self.nickname = nickname
 
-        def __str__(self):
-            return self.nickname
+        # def __str__(self):
+        #     return self.nickname
 
     class History(Base):
         __tablename__ = 'History'
@@ -52,7 +52,6 @@ class DataBase:
         self.Base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
-
         self.session.query(self.ActiveClients).delete()
         self.session.commit()
 
@@ -78,17 +77,13 @@ class DataBase:
         self.session.commit()
 
     def get_active_list(self):
-        if self.session.query(self.ActiveClients).all():
-            result = self.session.query(self.Clients.nickname, self.ActiveClients.ip).join(self.Clients)
-            return result.all()
-        return False
+        result = self.session.query(self.Clients.nickname, self.ActiveClients.ip).join(self.Clients)
+        return result.all()
 
 
     def get_history(self):
-        if self.session.query(self.History).all():
-            result = self.session.query(self.Clients.nickname, self.History.ip, self.History.date_entry).join(self.Clients)
-            return result.all()
-        return False
+        result = self.session.query(self.Clients.nickname, self.History.ip, self.History.date_entry).join(self.Clients)
+        return result.all()
 
 if __name__ == '__main__':
     db  = DataBase()
