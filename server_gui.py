@@ -53,6 +53,16 @@ def create_stat_model(database):
         model.appendRow([client, date, ip])
     return model
 
+def create_clients_list(database):
+    clients = database.get_all_client()
+    model = QStandardItemModel()
+    model.setHorizontalHeaderLabels(['Клиент'])
+    for client in clients:
+        client = QStandardItem(client)
+        client.setEditable(False)
+        model.appendRow([client])
+    return model
+
 class MainWindow(QMainWindow):
 
     def __init__(self):
@@ -67,6 +77,7 @@ class MainWindow(QMainWindow):
 
         self.refresh_button = QAction('Обновить список', self)
         self.config_btn = QAction('Настройки сервера', self)
+        self.client_btn = QAction('Список клиентов', self)
         self.show_history_button = QAction('История клиентов', self)
 
         self.statusBar()
@@ -74,6 +85,7 @@ class MainWindow(QMainWindow):
         self.toolbar = self.addToolBar('MainBar')
         self.toolbar.addAction(exit_action)
         self.toolbar.addAction(self.refresh_button)
+        self.toolbar.addAction(self.client_btn)
         self.toolbar.addAction(self.show_history_button)
         self.toolbar.addAction(self.config_btn)
 
@@ -111,6 +123,25 @@ class HistoryWindow(QDialog):
 
         self.show()
 
+class ClientsWindow(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle('Список зарегистрированных клиентов')
+        self.setFixedSize(350, 470)
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
+        self.close_button = QPushButton('Закрыть', self)
+        self.close_button.move(250, 440)
+        self.close_button.clicked.connect(self.close)
+
+        self.client_table = QTableView(self)
+        self.client_table.move(10, 10)
+        self.client_table.setFixedSize(300, 420)
+
+        self.show()
 
 class ConfigWindow(QDialog):
     def __init__(self):

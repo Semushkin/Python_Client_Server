@@ -1,7 +1,7 @@
 import os.path
 import sys
 from common.variables import DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE, ERROR, ACTION, \
-    ANSWER, MESSAGE, FROM, NICKNAME, TEXT, TO, EXIT
+    ANSWER, MESSAGE, FROM, NICKNAME, TEXT, TO, EXIT, GET_CONTACT, ADD_CONTACT, DEL_CONTACT, CONTACTS, CONTACT_NAME
 from socket import socket, AF_INET, SOCK_STREAM
 from common.utils import receive_message, send_message
 import logging
@@ -15,7 +15,8 @@ from descriptrs import Port
 from threading import Thread, Lock
 from database_server import DataBase
 from PyQt5.QtWidgets import QApplication, QMessageBox
-from server_gui import MainWindow, HistoryWindow, ConfigWindow, create_stat_model, create_connections_model
+from server_gui import (MainWindow, HistoryWindow, ConfigWindow, create_stat_model, create_connections_model,
+                        ClientsWindow, create_clients_list)
 import configparser
 from PyQt5.QtCore import QTimer
 
@@ -64,18 +65,18 @@ class Server(Thread, metaclass=ServerVerifier):
                 pass
             else:
                 data = receive_message(client)
-                data = self.validation(data)
-                if data[RESPONSE] != 400:
-                    self.clients_name[data[NICKNAME]] = client
-                    print(f'Подключился клиент {data[NICKNAME]}')
-                    with conflag_lock:
-                        new_connection = True
-                    self.database.client_entry(data[NICKNAME], client_address[0])
-                    logs_server.info(f'Установлено соединения с клиентом "{data[NICKNAME]}", с адресом {client_address}')
-                    send_message(client, {RESPONSE: 200})  # Отправка 200
-                    self.clients.append(client)
-                else:
-                    logs_server.error(f'Неудачная попытка соединения с клиентом {client}, с адресом {client_address}')
+                data = self.validation(data, client)
+                # if data[RESPONSE] != 400:
+                #     self.clients_name[data[NICKNAME]] = client
+                #     print(f'Подключился клиент {data[NICKNAME]}')
+                #     with conflag_lock:
+                #         new_connection = True
+                #     self.database.client_entry(data[NICKNAME], client_address[0])
+                #     logs_server.info(f'Установлено соединения с клиентом "{data[NICKNAME]}", с адресом {client_address}')
+                #     send_message(client, {RESPONSE: 200})  # Отправка 200
+                #     self.clients.append(client)
+                # else:
+                #     logs_server.error(f'Неудачная попытка соединения с клиентом {client}, с адресом {client_address}')
             receive_data_lst = []
             send_data_lst = []
             errors_lst =[]
@@ -89,17 +90,20 @@ class Server(Thread, metaclass=ServerVerifier):
                 for client_m in receive_data_lst:
                     try:
                         data = receive_message(client_m)
-                        data = self.validation(data)
-                        if data[ACTION] == MESSAGE:
-                            self.messages.append((data[NICKNAME], data[TEXT], data[TO]))
-                            print(f'Получено сообщение от {data[NICKNAME]} для {data[TO]}')
-                            logs_server.info(f'Получено сообщение от клиента {data[NICKNAME]}')
-                        elif data[ACTION] == EXIT:
-                            print(f'Пользователь {data[NICKNAME]} отключился')
-                            logs_server.info(f'Пользователь {data[NICKNAME]} отключился')
-                            self.database.client_exit(data[NICKNAME])
-                            self.clients.remove(client_m)
-                            del self.clients_name[data[NICKNAME]]
+                        data = self.validation(data, client_m)
+                        if ACTION in data:
+                            if data[ACTION] == MESSAGE:
+                                self.messages.append((data[NICKNAME], data[TEXT], data[TO]))
+                                print(f'Получено сообщение от {data[NICKNAME]} для {data[TO]}')
+                                logs_server.info(f'Получено сообщение от клиента {data[NICKNAME]}')
+                            elif data[ACTION] == EXIT:
+                                print(f'Пользователь {data[NICKNAME]} отключился')
+                                logs_server.info(f'Пользователь {data[NICKNAME]} отключился')
+                                self.database.client_exit(data[NICKNAME])
+                                self.clients.remove(client_m)
+                                del self.clients_name[data[NICKNAME]]
+                                with conflag_lock:
+                                    new_connection = True
                     except Exception as e:
                         logs_server.info(f'{MOD} - Ошибка получения сообщения от {client_m}; Ошибка:{e}')
                         logs_server.info(f'{MOD} - клиент {client_m} отключился')
@@ -123,18 +127,48 @@ class Server(Thread, metaclass=ServerVerifier):
                     del self.clients_name[message[2]]
             self.messages.clear()
 
-
     @log
-    def validation(self, data):
+    def validation(self, data, client):
+        global new_connection
         if ACTION in data and data[ACTION] == PRESENCE:
-            return {RESPONSE: 200, NICKNAME: data[NICKNAME]}
+            if data[NICKNAME] in self.clients_name.keys():
+                send_message(client, {RESPONSE: 400, ERROR: 'Nickname has already been registered'})
+                return
+            self.clients_name[data[NICKNAME]] = client
+            print(f'Подключился клиент {data[NICKNAME]}')
+            with conflag_lock:
+                new_connection = True
+            ip, port = client.getpeername()
+            self.database.client_entry(data[NICKNAME], ip)
+            send_message(client, {RESPONSE: 200})
+            logs_server.info(f'Установлено соединения с клиентом "{data[NICKNAME]}", с адресом {ip}')
+            self.clients.append(client)
+            # return {RESPONSE: 200, NICKNAME: data[NICKNAME]}
         elif ACTION in data and data[ACTION] == MESSAGE:
+            logs_server.info(f'Получено сообщение от "{data[NICKNAME]}", для {data[TO]}')
             return {ACTION: MESSAGE, NICKNAME: data[NICKNAME], TEXT: data[TEXT], TO: data[TO]}
         elif ACTION in data and data[ACTION] == EXIT:
             return {ACTION: EXIT, NICKNAME: data[NICKNAME]}
+        elif ACTION in data and data[ACTION] == GET_CONTACT:
+            send_message(client, {RESPONSE: 202, CONTACTS: self.database.get_contacts(data[NICKNAME])})
+            # return {RESPONSE: 202, 'alert': self.database.get_contacts(data[NICKNAME])}
+            return data
+        elif ACTION in data and data[ACTION] == ADD_CONTACT:
+            if self.database.add_contact(data[NICKNAME], data[CONTACT_NAME]):
+                send_message(client, {RESPONSE: 200})
+            else:
+                send_message(client, {RESPONSE: 406})
+            return data
+        elif ACTION in data and data[ACTION] == DEL_CONTACT:
+            if self.database.delete_contact(data[NICKNAME], data[CONTACT_NAME]):
+                send_message(client, {RESPONSE: 200})
+            else:
+                send_message(client, {RESPONSE: 406})
+            return data
         else:
             logs_server.warning(f'{MOD} - клиенту отправлен код 400 в функции - "{inspect.stack()[0][3]}"')
-            return {RESPONSE: 400, ERROR: 'Bad Request'}
+            send_message(client, {RESPONSE: 400, ERROR: 'Bad Request'})
+            # return {RESPONSE: 400, ERROR: 'Bad Request'}
 
     @staticmethod
     @log
@@ -192,6 +226,14 @@ if __name__ == '__main__':
             with conflag_lock:
                 new_connection = False
 
+    def show_clients():
+        global clients_list
+        clients_list = ClientsWindow()
+        clients_list.client_table.setModel(create_clients_list(database))
+        clients_list.client_table.resizeColumnsToContents()
+        clients_list.client_table.resizeRowsToContents()
+
+
     def show_statistics():
         global stat_window
         stat_window = HistoryWindow()
@@ -233,26 +275,11 @@ if __name__ == '__main__':
     timer.start(1000)
 
     main_window.refresh_button.triggered.connect(connection_update)
+    main_window.client_btn.triggered.connect(show_clients)
     main_window.show_history_button.triggered.connect(show_statistics)
     main_window.config_btn.triggered.connect(server_config)
 
     server_app.exec_()
-
-
-    # print('------------------Команды----------------------------')
-    # print('active - Список пользователей онлайн')
-    # print('history - История входов пользователей')
-    # print('exit - Выход')
-    # print('-------------------------------------------------')
-    #
-    # while True:
-    #     command = input('Введите команду:')
-    #     if command == 'active':
-    #         server.show_active_client()
-    #     elif command == 'history':
-    #         server.show_history()
-    #     elif command == 'exit':
-    #         break
 
 
 
