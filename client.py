@@ -26,6 +26,25 @@ class Client(Thread, metaclass=ClientVerifier):
         self.database = database
         super().__init__()
 
+    @log
+    def validation(self, data):
+        if RESPONSE in data:
+            if data[RESPONSE] == 200:
+                return f'{data[RESPONSE]}: Выполнено!'
+            elif data[RESPONSE] == 406:
+                return f'{data[RESPONSE]}: Ошибка Добавления/Удаления контакта'
+            elif data[RESPONSE] == 202:
+                return f'{data[RESPONSE]}: Добавлен новый контакт'
+            else:
+                logs_client.warning(f'{MOD} - сервер прслал код 400 в функции - "{inspect.stack()[0][3]}"')
+                # return f'400: {data[ERROR]}'
+                raise ServerError(f'Ошибка ссоединения с сервером! {data[ERROR]}')
+        elif ACTION in data and data[ACTION] == MESSAGE:
+            # return {NICKNAME: data[NICKNAME], TEXT: data[TEXT]}
+            self.database.save_history_messages(data[NICKNAME], self.nickname, data[TEXT])
+            return f'\nПолучено сообщение от {data[NICKNAME]}: {data[TEXT]}'
+        raise logs_client.error(f'{MOD} - Ошибка валидации ответа сервера в функции - {inspect.stack()[0][3]}')
+
 class ClientSender(Client):
     def run(self):
         print('----------------'
@@ -66,7 +85,9 @@ class ClientSender(Client):
                 else:
                     print('Команда не распознана')
             elif command == 'history':
-                print(self.database.get_history_messages())
+                for item in self.database.get_history_messages():
+                    print(item)
+                # print(self.database.get_history_messages())
             elif command == 'exit':
                 message = create_message(EXIT, self.nickname)
                 send_message(self.connection, message)
@@ -79,27 +100,8 @@ class ClientReceive(Client):
     def run(self):
         while True:
             time.sleep(1)
-            message = validation(receive_message(self.connection))
+            message = self.validation(receive_message(self.connection))
             print(message)
-
-
-@log
-def validation(data):
-    if RESPONSE in data:
-        if data[RESPONSE] == 200:
-            return f'{data[RESPONSE]}: Выполнено!'
-        elif data[RESPONSE] == 406:
-            return f'{data[RESPONSE]}: Ошибка Добавления/Удаления контакта'
-        elif data[RESPONSE] == 202:
-            return f'{data[RESPONSE]}: Добавлен новый контакт'
-        else:
-            logs_client.warning(f'{MOD} - сервер прслал код 400 в функции - "{inspect.stack()[0][3]}"')
-            # return f'400: {data[ERROR]}'
-            raise ServerError(f'Ошибка ссоединения с сервером! {data[ERROR]}')
-    elif ACTION in data and data[ACTION] == MESSAGE:
-        # return {NICKNAME: data[NICKNAME], TEXT: data[TEXT]}
-        return f'\nПолучено сообщение от {data[NICKNAME]}: {data[TEXT]}'
-    raise logs_client.error(f'{MOD} - Ошибка валидации ответа сервера в функции - {inspect.stack()[0][3]}')
 
 
 @log
@@ -181,6 +183,9 @@ def main():
     # Получение подтверждения о подключении
     try:
         answer = receive_message(connection)
+        if answer[RESPONSE] == 400:
+            print(f'{answer[RESPONSE]}: Ошибка ссоединения с сервером')
+            exit(1)
         print(f'{answer[RESPONSE]}. Установлено ссоединение с сервером')
         print('----------------------------------------------')
         logs_client.info(f'{MOD} - получен ответ сервера в функции "{inspect.stack()[0][3]}"')

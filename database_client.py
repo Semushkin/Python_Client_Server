@@ -33,6 +33,8 @@ class DataBase:
             self.message = message
             self.date = datetime.now()
 
+        def __str__(self):
+            return f'from: {self.sender}; to: {self.recipient}; message: {self.message}'
 
     def __init__(self, client):
 
@@ -67,6 +69,7 @@ class DataBase:
 
     def get_history_messages(self):
         messages = self.session.query(self.HistoryMessage).all()
+        # return [message for message in messages]
         return messages
 
 
