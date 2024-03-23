@@ -17,7 +17,7 @@ from errors import ServerError
 
 logs_client = logging.getLogger('app.client')
 MOD = inspect.stack()[0][1].split("/")[-1]
-thread_lock = Lock()
+# thread_lock = Lock()
 
 class Client(Thread, metaclass=ClientVerifier):
     def __init__(self, nickname, connection, database):
@@ -31,9 +31,8 @@ class ClientSender(Client):
         print('----------------'
               'Команды:\n'
               '"message" - Написать сообщение\n'
-              '"contacts" - Список контактов\n'
-              '"add cont" - Добавить контакт\n'
-              '"delete cont" - Удалить контакт\n'
+              '"contacts" - Раздел контактов\n'
+              '"history" - История сообщений\n'
               '"exit" - Выйти\n'
               '----------------')
         while True:
@@ -41,7 +40,9 @@ class ClientSender(Client):
             if command == 'message':
                 to = input('Введите получателя:')
                 message = input('Введите сообщение:')
+                self.database.save_history_messages(self.nickname, to, message)
                 message = create_message(MESSAGE, self.nickname, message, to)
+                # self.database.save_history_messages(self.nickname, to, message)
                 send_message(self.connection, message)
             elif command == 'contacts':
                 print('------------------------------')
@@ -55,22 +56,21 @@ class ClientSender(Client):
                 elif command_cont == 'add':
                     contact = input('Укажите имя нового контакта:')
                     self.database.add_contact(contact)
-                    with thread_lock:
-                        message = create_message(ADD_CONTACT, self.nickname, contact=contact)
-                        send_message(self.connection, message)
+                    message = create_message(ADD_CONTACT, self.nickname, contact=contact)
+                    send_message(self.connection, message)
                 elif command_cont == 'del':
                     contact = input('Укажите имя удаляемого контакта:')
                     self.database.delete_contact(contact)
-                    with thread_lock:
-                        message = create_message(DEL_CONTACT, self.nickname, contact=contact)
-                        send_message(self.connection, message)
+                    message = create_message(DEL_CONTACT, self.nickname, contact=contact)
+                    send_message(self.connection, message)
                 else:
                     print('Команда не распознана')
+            elif command == 'history':
+                print(self.database.get_history_messages())
             elif command == 'exit':
-                with thread_lock:
-                    message = create_message(EXIT, self.nickname)
-                    send_message(self.connection, message)
-                    break
+                message = create_message(EXIT, self.nickname)
+                send_message(self.connection, message)
+                break
             else:
                 print('Команда не распознана.')
 
@@ -79,9 +79,8 @@ class ClientReceive(Client):
     def run(self):
         while True:
             time.sleep(1)
-            with thread_lock:
-                message = validation(receive_message(self.connection))
-                print(message)
+            message = validation(receive_message(self.connection))
+            print(message)
 
 
 @log

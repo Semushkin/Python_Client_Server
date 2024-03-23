@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import Column, Integer, String, create_engine, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from common.variables import DATABASE_CLIENT
@@ -17,13 +19,19 @@ class DataBase:
         def __str__(self):
             return self.nickname
 
-    class History(Base):
+    class HistoryMessage(Base):
         __tablename__ = 'History'
         id = Column(Integer, primary_key=True)
-        form_user = Column(String)
-        to_user = Column(String)
+        sender = Column(String)
+        recipient = Column(String)
         message = Column(String)
         date = Column(DateTime)
+
+        def __init__(self, sender, recipient, message):
+            self.sender = sender
+            self.recipient = recipient
+            self.message = message
+            self.date = datetime.now()
 
 
     def __init__(self, client):
@@ -51,6 +59,15 @@ class DataBase:
 
     def delete_contact(self, contact):
         self.session.query(self.Contacts).filter_by(nickname=contact).delete()
+
+    def save_history_messages(self, sender, recipient, message):
+        message = self.HistoryMessage(sender, recipient, message)
+        self.session.add(message)
+        self.session.commit()
+
+    def get_history_messages(self):
+        messages = self.session.query(self.HistoryMessage).all()
+        return messages
 
 
 if __name__ == '__main__':
