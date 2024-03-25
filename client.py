@@ -3,7 +3,7 @@ import sys
 import logging
 import argparse
 import time
-from socket import socket, AF_INET, SOCK_STREAM
+from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from common.variables import DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE, ERROR, ACTION, TEXT, \
     ANSWER, MESSAGE, NICKNAME, FROM, TO, EXIT, GET_CONTACT, ADD_CONTACT, DEL_CONTACT, TIME, CONTACT_NAME, CONTACTS
 from common.utils import send_message, receive_message
@@ -168,6 +168,7 @@ def main():
         nickname = input('Введите имя пользователя: ')
 
     connection = socket(AF_INET, SOCK_STREAM)
+    connection.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
     #  Подключение к серверу
     try:

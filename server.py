@@ -2,7 +2,7 @@ import os.path
 import sys
 from common.variables import DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE, ERROR, ACTION, \
     ANSWER, MESSAGE, FROM, NICKNAME, TEXT, TO, EXIT, GET_CONTACT, ADD_CONTACT, DEL_CONTACT, CONTACTS, CONTACT_NAME
-from socket import socket, AF_INET, SOCK_STREAM
+from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from common.utils import receive_message, send_message
 import logging
 from logs.decor import log
@@ -49,6 +49,7 @@ class Server(Thread, metaclass=ServerVerifier):
         self.messages = []
         self.clients_name = dict()  # Список сокетов с именами клиентов. {client_name: client_socket}
         self.connection = socket(AF_INET, SOCK_STREAM)
+        self.connection.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.connection.bind((self.ip, self.port))
         print(f'Запущен сервер с праметрами: ip = "{self.ip}", port = {self.port}')
         self.connection.settimeout(0.5)
@@ -66,17 +67,6 @@ class Server(Thread, metaclass=ServerVerifier):
             else:
                 data = receive_message(client)
                 data = self.validation(data, client)
-                # if data[RESPONSE] != 400:
-                #     self.clients_name[data[NICKNAME]] = client
-                #     print(f'Подключился клиент {data[NICKNAME]}')
-                #     with conflag_lock:
-                #         new_connection = True
-                #     self.database.client_entry(data[NICKNAME], client_address[0])
-                #     logs_server.info(f'Установлено соединения с клиентом "{data[NICKNAME]}", с адресом {client_address}')
-                #     send_message(client, {RESPONSE: 200})  # Отправка 200
-                #     self.clients.append(client)
-                # else:
-                #     logs_server.error(f'Неудачная попытка соединения с клиентом {client}, с адресом {client_address}')
             receive_data_lst = []
             send_data_lst = []
             errors_lst =[]

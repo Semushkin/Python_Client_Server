@@ -5,25 +5,6 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 import sys
 
 
-# def create_model(database):
-#     list_users = database.active_users_list()
-#     list = QStandardItemModel()
-#     list.setHorizontalHeaderLabels(['Имя Клиента', 'IP Адрес', 'Порт', 'Время подключения'])
-#     for row in list_users:
-#         user, ip, port, time = row
-#         user = QStandardItem(user)
-#         user.setEditable(False)
-#         ip = QStandardItem(ip)
-#         ip.setEditable(False)
-#         port = QStandardItem(str(port))
-#         port.setEditable(False)
-#         # Уберём милисекунды из строки времени, т.к. такая точность не требуется.
-#         time = QStandardItem(str(time.replace(microsecond=0)))
-#         time.setEditable(False)
-#         list.appendRow([user, ip, port, time])
-#     return list
-
-
 def create_connections_model(database):
     conn_list = database.get_active_list()
     model = QStandardItemModel()
@@ -36,7 +17,6 @@ def create_connections_model(database):
         ip.setEditable(False)
         model.appendRow([client, ip])
     return model
-
 
 def create_stat_model(database):
     history_list = database.get_history()
@@ -90,7 +70,7 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.config_btn)
 
         self.setFixedSize(800, 500)
-        self.setWindowTitle('Messenger')
+        self.setWindowTitle('Server')
 
         self.label = QLabel('Список подключённых клиентов:', self)
         self.label.setFixedSize(240, 15)
@@ -142,6 +122,8 @@ class ClientsWindow(QDialog):
         self.client_table.setFixedSize(300, 420)
 
         self.show()
+
+
 
 class ConfigWindow(QDialog):
     def __init__(self):
