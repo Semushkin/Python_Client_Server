@@ -14,20 +14,22 @@ from threading import Thread, Lock
 from metaclasses import ClientVerifier
 from database_client import DataBase
 from errors import ServerError
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QMessageBox
 from client_gui import MainWindow, EnterWindow
 
 logs_client = logging.getLogger('app.client')
 MOD = inspect.stack()[0][1].split("/")[-1]
 thread_lock = Lock()
 
+
 class Client(Thread):
     def __init__(self, nickname, ip, port):
         self.nickname = self.check_nickname(nickname)
         self.ip = ip
         self.port = port
-        # self.database = DataBase(self.nickname)
-        # self.connect = self.connection()
+        print(f'Параметры подключения {self.nickname}, {self.ip}, {self.port}')
+        self.database = DataBase(self.nickname)
+        self.connect = self.connection()
         super().__init__()
 
     def connection(self):
@@ -43,8 +45,9 @@ class Client(Thread):
             logs_client.info(f'{MOD} - отправлено собщение серверу в функции "{inspect.stack()[0][3]}"')
         except:
             logs_client.critical(f'{MOD} - Ошибка ссоединения с сервером!!!')
-            print('Ошибка ссоединения с сервером!!!')
-            exit(1)
+            raise ServerError('400: Ошибка ссоединения с сервером')
+            # print('Ошибка ссоединения с сервером!!!')
+            # exit(1)
 
         # Получение подтверждения о подключении
         try:
@@ -62,6 +65,7 @@ class Client(Thread):
             print(err.text)
         else:
             return connect
+
 
     def check_nickname(self, nickname):
         if not nickname:
@@ -87,6 +91,7 @@ class Client(Thread):
             self.database.save_history_messages(data[NICKNAME], self.nickname, data[TEXT])
             return f'\nПолучено сообщение от {data[NICKNAME]}: {data[TEXT]}'
         raise logs_client.error(f'{MOD} - Ошибка валидации ответа сервера в функции - {inspect.stack()[0][3]}')
+
 
 class ClientSender(Client):
     def run(self):
@@ -177,6 +182,7 @@ def create_presence(account_name='Guest'):
     #LOGGER.debug(f'Сформировано {PRESENCE} сообщение для пользователя {account_name}')
     return out
 
+
 @log
 def arg_data():
     parse = argparse.ArgumentParser()
@@ -260,15 +266,8 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
-    # ip, port, status, nickname = arg_data()
     app = QApplication(sys.argv)
-    # database = DataBase(nickname)
-
     nick_app = EnterWindow()
-
-    # client = Client(nickname, ip, port)
-    # main_window = MainWindow()
     app.exec_()
     nickname = nick_app.nickname
     ip = nick_app.address
@@ -279,9 +278,17 @@ if __name__ == '__main__':
         ip = DEFAULT_IP
     if not port:
         port =DEFAULT_PORT
-
-    client = Client(nickname, ip, port)
-    main_window = MainWindow()
-    app.exec_()
+    try:
+        client = Client(nickname, ip, port)
+    except ServerError as e:
+        print(f'{e.text}')
+        # exit(1)
+        message = QMessageBox()
+        message.setWindowTitle('Ошибка!!!')
+        message.setText(f'{e.text}. Попробуйте позже')
+        message.exec()
+    else:
+        main_window = MainWindow()
+        app.exec_()
 
 

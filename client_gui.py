@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QLabel, QListView, QTextEdit, QPushButton, QDialog, QLineEdit
+from PyQt5.QtWidgets import QMainWindow, QApplication, QLabel, QListView, QTextEdit, QPushButton, QDialog, QLineEdit, QMessageBox
 import sys
 
 
@@ -102,10 +102,14 @@ class EnterWindow(QDialog):
         self.show()
 
     def enter(self):
-        self.nickname = self.edit_nickname.text()
-        self.address = self.edit_address.text()
-        self.port = self.edit_port.text()
-        self.close()
+        if not self.edit_nickname.text():
+            message = QMessageBox()
+            message.warning(self, 'Ошибка!!!' ,'Не верное имя пользователя')
+        else:
+            self.nickname = self.edit_nickname.text()
+            self.address = self.edit_address.text()
+            self.port = self.edit_port.text()
+            self.close()
 
 
 if __name__ == '__main__':
