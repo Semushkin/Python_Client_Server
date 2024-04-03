@@ -14,60 +14,20 @@ from threading import Thread, Lock
 from metaclasses import ClientVerifier
 from database_client import DataBase
 from errors import ServerError
-from PyQt5.QtWidgets import QApplication
-from client_gui import MainWindow, EnterWindow
 
 logs_client = logging.getLogger('app.client')
 MOD = inspect.stack()[0][1].split("/")[-1]
 thread_lock = Lock()
 
-class Client(Thread):
-    def __init__(self, nickname, ip, port):
-        self.nickname = self.check_nickname(nickname)
-        self.ip = ip
-        self.port = port
-        # self.database = DataBase(self.nickname)
-        # self.connect = self.connection()
+class Client(Thread, metaclass=ClientVerifier):
+    def __init__(self, nickname, connection, database):
+        self.nickname = nickname
+        self.connection = connection
+        self.database = database
         super().__init__()
 
-    def connection(self):
-        connect = socket(AF_INET, SOCK_STREAM)
-        connect.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-
-        #Подключение к серверу
-        try:
-            print(f'Параметры запуска: ip = {self.ip}, port = {self.port}, nikname = {self.nickname}')
-            connect.connect((self.ip, self.port))
-            message_out = create_message(PRESENCE, self.nickname)
-            send_message(connect, message_out)
-            logs_client.info(f'{MOD} - отправлено собщение серверу в функции "{inspect.stack()[0][3]}"')
-        except:
-            logs_client.critical(f'{MOD} - Ошибка ссоединения с сервером!!!')
-            print('Ошибка ссоединения с сервером!!!')
-            exit(1)
-
-        # Получение подтверждения о подключении
-        try:
-            answer = receive_message(connect)
-            if answer[RESPONSE] == 400:
-                print(f'{answer[RESPONSE]}: Ошибка ссоединения с сервером')
-                exit(1)
-            print(f'{answer[RESPONSE]}. Установлено ссоединение с сервером')
-            print('----------------------------------------------')
-            logs_client.info(f'{MOD} - получен ответ сервера в функции "{inspect.stack()[0][3]}"')
-        except (ValueError, json.JSONDecodeError):
-            logs_client.error(f'{MOD} - не верный формат полученного сообщения в функции - "{inspect.stack()[0][3]}"')
-            exit(1)
-        except ServerError as err:
-            print(err.text)
-        else:
-            return connect
-
-    def check_nickname(self, nickname):
-        if not nickname:
-            return 'Sam'
-        return nickname
-
+    def connrction(self):
+        pass
 
     @log
     def validation(self, data):
@@ -260,28 +220,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
-    # ip, port, status, nickname = arg_data()
-    app = QApplication(sys.argv)
-    # database = DataBase(nickname)
-
-    nick_app = EnterWindow()
-
-    # client = Client(nickname, ip, port)
-    # main_window = MainWindow()
-    app.exec_()
-    nickname = nick_app.nickname
-    ip = nick_app.address
-    port = nick_app.port
-    if not nickname:
-        exit(1)
-    if not ip:
-        ip = DEFAULT_IP
-    if not port:
-        port =DEFAULT_PORT
-
-    client = Client(nickname, ip, port)
-    main_window = MainWindow()
-    app.exec_()
-
-
+    main()

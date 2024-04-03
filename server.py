@@ -97,9 +97,15 @@ class Server(Thread, metaclass=ServerVerifier):
                     except Exception as e:
                         logs_server.info(f'{MOD} - Ошибка получения сообщения от {client_m}; Ошибка:{e}')
                         logs_server.info(f'{MOD} - клиент {client_m} отключился')
-                        self.database.client_exit(data[NICKNAME])
+                        for client in self.clients_name:
+                            if self.clients_name[client] == client_m:
+                                self.database.client_exit(client)
+                                print(f'Клиент {client} отключился')
+                                del self.clients_name[client]
+                                break
+                        # self.database.client_exit(data[NICKNAME])
                         self.clients.remove(client_m)
-                        del self.clients_name[data[NICKNAME]]
+                        # del self.clients_name[data[NICKNAME]]
                         with conflag_lock:
                             new_connection = True
             # Отправка сообщений
