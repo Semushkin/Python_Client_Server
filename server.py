@@ -6,7 +6,7 @@ from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from common.utils import receive_message, send_message
 import logging
 from logs.decor import log
-import logs.server_log_config
+# import logs.server_log_config
 import inspect
 import argparse
 import select
@@ -26,6 +26,7 @@ MOD = inspect.stack()[0][1].split("/")[-1]
 new_connection = False
 conflag_lock = Lock()
 
+
 @log
 def arg_data():
     parse = argparse.ArgumentParser()
@@ -40,6 +41,7 @@ def arg_data():
 
 class Server(Thread, metaclass=ServerVerifier):
     port = Port()
+
     def __init__(self, ip, port, database):
         self.ip = ip
         self.port = port
@@ -194,7 +196,6 @@ class Server(Thread, metaclass=ServerVerifier):
         else:
             print('Нет подключенных пользователей')
         print('----------------------------------------------------------------')
-
 
 
 if __name__ == '__main__':
