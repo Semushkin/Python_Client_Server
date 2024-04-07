@@ -19,6 +19,7 @@ logs_client = logging.getLogger('app.client')
 MOD = inspect.stack()[0][1].split("/")[-1]
 thread_lock = Lock()
 
+
 class Client(Thread, metaclass=ClientVerifier):
     def __init__(self, nickname, connection, database):
         self.nickname = nickname
@@ -47,6 +48,7 @@ class Client(Thread, metaclass=ClientVerifier):
             self.database.save_history_messages(data[NICKNAME], self.nickname, data[TEXT])
             return f'\nПолучено сообщение от {data[NICKNAME]}: {data[TEXT]}'
         raise logs_client.error(f'{MOD} - Ошибка валидации ответа сервера в функции - {inspect.stack()[0][3]}')
+
 
 class ClientSender(Client):
     def run(self):
@@ -153,6 +155,7 @@ def arg_data():
     nickname = namespace.n
     return ip, port, status, nickname
 
+
 def database_refresh(conn, database, nickname):
     get_contacts = create_message(GET_CONTACT, nickname)
     send_message(conn, get_contacts)
@@ -164,6 +167,7 @@ def database_refresh(conn, database, nickname):
                 database.add_contact(contact)
         else:
             raise ServerError('Ошибка запроса контактов с сервера')
+
 
 def main():
     ip, port, status, nickname = arg_data()

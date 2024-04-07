@@ -33,7 +33,6 @@ class Client(Thread):
         self.database_refresh()
         super().__init__()
 
-
     def connection(self):
         connect = socket(AF_INET, SOCK_STREAM)
         connect.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -94,7 +93,6 @@ class Client(Thread):
             else:
                 raise ServerError('Ошибка запроса контактов с сервера')
 
-
     @log
     def validation(self, data):
         if RESPONSE in data:
@@ -113,6 +111,29 @@ class Client(Thread):
             self.database.save_history_messages(data[NICKNAME], self.nickname, data[TEXT])
             return f'\nПолучено сообщение от {data[NICKNAME]}: {data[TEXT]}'
         raise logs_client.error(f'{MOD} - Ошибка валидации ответа сервера в функции - {inspect.stack()[0][3]}')
+
+    def add_contact(self, new_contact):
+        message_out = self.create_message(ADD_CONTACT, self.nickname, contact=new_contact)
+        send_message(self.connect, message_out)
+        message_in = receive_message(self.connect)
+        if RESPONSE in message_in:
+            if message_in[RESPONSE] == 200:
+                self.database.add_contact(new_contact)
+                return True
+            else:
+                return False
+
+    def delete_contact(self, del_contact):
+        message_out = self.create_message(DEL_CONTACT, self.nickname, contact=del_contact)
+        send_message(self.connect, message_out)
+        message_in = receive_message(self.connect)
+        if RESPONSE in message_in:
+            if message_in[RESPONSE] == 200:
+                self.database.delete_contact(del_contact)
+                return True
+            else:
+                return False
+
 
 
 @log
@@ -144,7 +165,7 @@ if __name__ == '__main__':
     if not ip:
         ip = DEFAULT_IP
     if not port:
-        port =DEFAULT_PORT
+        port = DEFAULT_PORT
     try:
         database = DataBase(nickname)
         client = Client(nickname, ip, port, database)

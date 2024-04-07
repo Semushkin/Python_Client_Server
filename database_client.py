@@ -5,6 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from common.variables import DATABASE_CLIENT
 from sqlalchemy.orm import sessionmaker
 
+
 class DataBase:
     Base = declarative_base()
 

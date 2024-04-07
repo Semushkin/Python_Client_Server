@@ -28,10 +28,12 @@ class MainWindow(QMainWindow):
         self.btn_contact_add = QPushButton('Add Contact', self)
         self.btn_contact_add.setGeometry(10, 40, 100, 25)
         self.btn_contact_add.setObjectName('btn_contact_add')
+        self.btn_contact_add.clicked.connect(self.contact_add)
 
         self.btn_contact_delete = QPushButton('Delete Contact', self)
         self.btn_contact_delete.setGeometry(120, 40, 110, 25)
         self.btn_contact_delete.setObjectName('btn_contact_delete')
+        self.btn_contact_delete.clicked.connect(self.contact_delete)
 
         self.contact_list = QListView(self)
         self.contact_list.setGeometry(10, 80, 200, 600)
@@ -67,6 +69,30 @@ class MainWindow(QMainWindow):
             item.setEditable(False)
             contacts_model.appendRow(item)
         self.contact_list.setModel(contacts_model)
+
+    def contact_add(self):
+        global add_contact
+        add_contact = NewContact(self.database, self.client)
+        add_contact.exec()
+
+        self.load_contacts()
+
+    def contact_delete(self):
+        data = self.contact_list.currentIndex().data()
+        if data:
+            info = QMessageBox()
+            info.setWindowTitle('Удаление контакта')
+            info.setText(f'Удалить контакт "{data}" ?')
+            info.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            button = info.exec()
+            if button == QMessageBox.Yes:
+                self.client.delete_contact(data)
+                self.load_contacts()
+                print('Удалено!')
+            else:
+                print('Отмена!')
+        else:
+            pass
 
 
 class EnterWindow(QDialog):
@@ -123,8 +149,12 @@ class EnterWindow(QDialog):
 
 
 class NewContact(QDialog):
-    def __init__(self):
+    def __init__(self, database=None, client=None):
         super().__init__()
+        self.database = database
+        self.client = client
+        self.initUI()
+        self.show()
 
     def initUI(self):
 
@@ -134,13 +164,32 @@ class NewContact(QDialog):
         self.label_nickname = QLabel('Nickname', self)
         self.label_nickname.setGeometry(20, 50 ,70, 20)
 
-        self.edit_nickname = QLabel(self)
+        self.edit_nickname = QLineEdit(self)
         self.edit_nickname.setGeometry(100, 50, 120, 25)
 
+        self.btn_add_contact = QPushButton('Add', self)
+        self.btn_add_contact.setGeometry(20, 180, 90, 25)
+        self.btn_add_contact.clicked.connect(self.add_contact)
+
+        self.btn_cancel = QPushButton('Cancel', self)
+        self.btn_cancel.setGeometry(150, 180, 90, 25)
+        self.btn_cancel.clicked.connect(self.close)
+
+    def add_contact(self):
+        message = QMessageBox()
+        if self.client.add_contact(self.edit_nickname.text()):
+            message.information(self, 'Новый Контакт', 'Добавлено')
+            self.close()
+            # Контакт успешно добавлен
+        else:
+            message.warning(self, 'Новый контакт', 'Данный контакт незарегистрирован')
+            self.close()
+            # Ошибка добавления контакта
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     # main = MainWindow()
-    enter = EnterWindow()
+    # enter = EnterWindow()
+    add_contact = NewContact()
     app.exec_()

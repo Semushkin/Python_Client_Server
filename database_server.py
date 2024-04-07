@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 from common.variables import DATABASE_SERVER
 
+
 class DataBase:
     Base = declarative_base()
 
@@ -56,7 +57,6 @@ class DataBase:
             self.client_id = client_id
             self.contact_id = contact_id
 
-
     def __init__(self):
 
         self.engine = create_engine(
@@ -96,7 +96,6 @@ class DataBase:
         result = self.session.query(self.Clients.nickname, self.ActiveClients.ip).join(self.Clients)
         return result.all()
 
-
     def get_history(self):
         result = self.session.query(self.Clients.nickname, self.History.ip, self.History.date_entry).join(self.Clients)
         return result.all()
@@ -117,9 +116,6 @@ class DataBase:
         if self.session.query(self.Contacts).filter_by(client_id=client.id, contact_id=contact.id).count():
             return True
 
-        # if not client or not contact or self.session.query(self.Contacts).filter_by(client_id=client.id, contact_id=contact.id).count():
-        #     return
-
         new_contact = self.Contacts(client.id, contact.id)
         self.session.add(new_contact)
         self.session.commit()
@@ -138,15 +134,15 @@ class DataBase:
         self.session.commit()
         return True
 
-
     def get_all_client(self):
         return [client[0] for client in self.session.query(self.Clients.nickname).all()]
 
     def get_all_contacts(self):
         return self.session.query(self.Contacts).join(self.Clients)
 
+
 if __name__ == '__main__':
-    db  = DataBase()
+    db = DataBase()
     # print(db.get_contacts('Sam'))
     # print(db.get_all_client())
     db.add_contact('Sam','Jaaack')

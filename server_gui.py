@@ -18,6 +18,7 @@ def create_connections_model(database):
         model.appendRow([client, ip])
     return model
 
+
 def create_stat_model(database):
     history_list = database.get_history()
     model = QStandardItemModel()
@@ -33,6 +34,7 @@ def create_stat_model(database):
         model.appendRow([client, date, ip])
     return model
 
+
 def create_clients_list(database):
     clients = database.get_all_client()
     model = QStandardItemModel()
@@ -42,6 +44,7 @@ def create_clients_list(database):
         client.setEditable(False)
         model.appendRow([client])
     return model
+
 
 class MainWindow(QMainWindow):
 
@@ -103,6 +106,7 @@ class HistoryWindow(QDialog):
 
         self.show()
 
+
 class ClientsWindow(QDialog):
     def __init__(self):
         super().__init__()
@@ -122,7 +126,6 @@ class ClientsWindow(QDialog):
         self.client_table.setFixedSize(300, 420)
 
         self.show()
-
 
 
 class ConfigWindow(QDialog):
