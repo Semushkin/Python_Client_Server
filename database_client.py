@@ -52,6 +52,10 @@ class DataBase:
         self.session.commit()
 
     def get_contacts(self):
+        """
+
+        :return: list of contacts (nickname, nickname, ...)
+        """
         return [contact[0] for contact in self.session.query(self.Contacts.nickname).all()]
 
     def add_contact(self, contact):
@@ -68,10 +72,13 @@ class DataBase:
         self.session.add(message)
         self.session.commit()
 
-    def get_history_messages(self):
+    def get_history_messages(self, contact=None):
+        """
+        :param contact: filter by contact
+        :return: list of messages
+        """
         messages = self.session.query(self.HistoryMessage).all()
-        # return [message for message in messages]
-        return messages
+        return [[message.sender, message.recipient, message.message, message.date] for message in messages]
 
 
 if __name__ == '__main__':
@@ -82,6 +89,9 @@ if __name__ == '__main__':
     db_sam.add_contact('Jack')
 
     print(db_sam.get_contacts())
+    print('---------------------')
+
+    db_sam.get_history_messages()
 
     # db_sam.delete_contact('Johne')
     # print(db_sam.get_contacts())

@@ -61,6 +61,7 @@ class MainWindow(QMainWindow):
         self.btn_send_message.setGeometry(240, 650, 90, 25)
         self.btn_send_message.setObjectName('btn_send_message')
 
+    # Загрузка списка Контактов
     def load_contacts(self):
         contacts = self.database.get_contacts()
         contacts_model = QStandardItemModel()
@@ -88,11 +89,11 @@ class MainWindow(QMainWindow):
             if button == QMessageBox.Yes:
                 self.client.delete_contact(data)
                 self.load_contacts()
-                print('Удалено!')
-            else:
-                print('Отмена!')
-        else:
-            pass
+
+    # Загрузка истории сообщений с выбранным контактом
+    def load_messages_list(self):
+        messages = self.database.get_history_messages()
+
 
 
 class EnterWindow(QDialog):
