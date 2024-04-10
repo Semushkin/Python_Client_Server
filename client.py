@@ -66,6 +66,13 @@ class Client(Thread):
         else:
             return connect
 
+    def run(self):
+        while True:
+            time.sleep(1)
+            while thread_lock:
+                self.validation(receive_message(self.connect))
+                print('Получено сообщение!')
+
     @staticmethod
     @log
     def create_message(action, nickname, text='', to='', contact=''):
@@ -134,6 +141,9 @@ class Client(Thread):
             else:
                 return False
 
+    def send_message(self, text, contact):
+        message = self.create_message(MESSAGE, self.nickname, text, contact)
+        send_message(self.connect, message)
 
 
 @log
@@ -169,6 +179,8 @@ if __name__ == '__main__':
     try:
         database = DataBase(nickname)
         client = Client(nickname, ip, port, database)
+        client.setDaemon(True)
+        client.start()
     except ServerError as e:
         print(f'{e.text}')
         # exit(1)

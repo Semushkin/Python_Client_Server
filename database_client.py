@@ -1,9 +1,10 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, create_engine, DateTime
+from sqlalchemy import Column, Integer, String, create_engine, DateTime, or_
 from sqlalchemy.ext.declarative import declarative_base
 from common.variables import DATABASE_CLIENT
 from sqlalchemy.orm import sessionmaker
+from pprint import pprint
 
 
 class DataBase:
@@ -72,13 +73,19 @@ class DataBase:
         self.session.add(message)
         self.session.commit()
 
-    def get_history_messages(self, contact=None):
+    def get_history_messages_by_contact(self, contact):
         """
-        :param contact: filter by contact
+        :param contact: contact
         :return: list of messages
         """
-        messages = self.session.query(self.HistoryMessage).all()
-        return [[message.sender, message.recipient, message.message, message.date] for message in messages]
+        messages = self.session.query(self.HistoryMessage).filter(or_(
+            self.HistoryMessage.sender == contact,
+            self.HistoryMessage.recipient == contact
+        ))
+        # return [[message.sender, message.recipient, message.message, message.date] for message in messages]
+        # return [f'from {message.sender}, to {message.recipient}, date {message.date}\n {message.message}'
+        #         for message in messages]
+        return messages
 
 
 if __name__ == '__main__':
@@ -91,7 +98,8 @@ if __name__ == '__main__':
     print(db_sam.get_contacts())
     print('---------------------')
 
-    db_sam.get_history_messages()
+    for item in db_sam.get_history_messages_by_contact():
+        print(item)
 
     # db_sam.delete_contact('Johne')
     # print(db_sam.get_contacts())

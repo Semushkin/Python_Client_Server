@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QLabel, QListView, QTextEdit, QPushButton, QDialog, QLineEdit,
                              QMessageBox)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtCore import Qt
 import sys
 
 
@@ -18,7 +19,7 @@ class MainWindow(QMainWindow):
 
     def initUI(self):
         self.setFixedSize(900, 700)
-        self.setWindowTitle('Messenger')
+        self.setWindowTitle(f'Messenger - {self.client.nickname}')
 
         self.label_contacts = QLabel(self)
         self.label_contacts.setGeometry(20, 10, 100, 20)
@@ -38,6 +39,7 @@ class MainWindow(QMainWindow):
         self.contact_list = QListView(self)
         self.contact_list.setGeometry(10, 80, 200, 600)
         self.contact_list.setObjectName('contact_list')
+        self.contact_list.doubleClicked.connect(self.load_messages_list)
 
         self.label_messages = QLabel(self)
         self.label_messages.setGeometry(240, 10, 100, 20)
@@ -60,6 +62,7 @@ class MainWindow(QMainWindow):
         self.btn_send_message = QPushButton('Send', self)
         self.btn_send_message.setGeometry(240, 650, 90, 25)
         self.btn_send_message.setObjectName('btn_send_message')
+        self.btn_send_message.clicked.connect(self.send_message)
 
     # Загрузка списка Контактов
     def load_contacts(self):
@@ -92,8 +95,24 @@ class MainWindow(QMainWindow):
 
     # Загрузка истории сообщений с выбранным контактом
     def load_messages_list(self):
-        messages = self.database.get_history_messages()
+        current_contact = self.contact_list.currentIndex().data()
+        messages = self.database.get_history_messages_by_contact(current_contact)
+        history_messages_model = QStandardItemModel()
+        for message in messages:
+            item = QStandardItem(f'from {message.sender}, to {message.recipient}, date {message.date}\n {message.message}')
+            if message.sender == self.client.nickname:
+                item.setTextAlignment(Qt.AlignRight)
+            item.setEditable(False)
+            history_messages_model.appendRow(item)
+        self.messages_list.setModel(history_messages_model)
 
+    def send_message(self):
+        message = self.text_new_message.toPlainText()
+        self.text_new_message.clear()
+        contact = self.contact_list.currentIndex().data()
+        if message:
+            self.client.send_message(message, contact)
+            print('Сообщение отправлено!')
 
 
 class EnterWindow(QDialog):
