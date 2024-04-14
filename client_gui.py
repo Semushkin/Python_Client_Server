@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QLabel, QListView, QTextEdit, QPushButton, QDialog, QLineEdit,
                              QMessageBox)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSlot
 import sys
 
 
@@ -14,7 +14,7 @@ class MainWindow(QMainWindow):
          self.client = client
          self.initUI()
          self.load_contacts()
-
+         self.connect_signals()
          self.show()
 
     def initUI(self):
@@ -105,6 +105,7 @@ class MainWindow(QMainWindow):
             item.setEditable(False)
             history_messages_model.appendRow(item)
         self.messages_list.setModel(history_messages_model)
+        self.messages_list.scrollToBottom()
 
     def send_message(self):
         message = self.text_new_message.toPlainText()
@@ -113,6 +114,14 @@ class MainWindow(QMainWindow):
         if message:
             self.client.send_message(message, contact)
             print('Сообщение отправлено!')
+            self.load_messages_list()
+
+    @pyqtSlot(str)
+    def receive_message(self):
+        self.load_messages_list()
+
+    def connect_signals(self):
+        self.client.signal_new_message.connect(self.receive_message)
 
 
 class EnterWindow(QDialog):

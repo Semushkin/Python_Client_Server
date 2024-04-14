@@ -15,6 +15,7 @@ from metaclasses import ClientVerifier
 from database_client import DataBase
 from errors import ServerError
 from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtCore import pyqtSignal, QObject
 from client_gui import MainWindow, EnterWindow
 
 logs_client = logging.getLogger('app.client')
@@ -22,8 +23,12 @@ MOD = inspect.stack()[0][1].split("/")[-1]
 thread_lock = Lock()
 
 
-class Client(Thread):
+class Client(Thread, QObject):
+    signal_new_message = pyqtSignal(str)
+
     def __init__(self, nickname, ip, port, database):
+        Thread.__init__(self)
+        QObject.__init__(self)
         self.nickname = nickname
         self.ip = ip
         self.port = port
@@ -31,7 +36,7 @@ class Client(Thread):
         self.database = database
         self.connect = self.connection()
         self.database_refresh()
-        super().__init__()
+        # super().__init__()
 
     def connection(self):
         connect = socket(AF_INET, SOCK_STREAM)
@@ -116,6 +121,9 @@ class Client(Thread):
         elif ACTION in data and data[ACTION] == MESSAGE:
             # return {NICKNAME: data[NICKNAME], TEXT: data[TEXT]}
             self.database.save_history_messages(data[NICKNAME], self.nickname, data[TEXT])
+            # return data
+            # self.signal_new_message.emit(data[NICKNAME])
+            self.signal_new_message.emit(data[NICKNAME])
             return f'\nПолучено сообщение от {data[NICKNAME]}: {data[TEXT]}'
         raise logs_client.error(f'{MOD} - Ошибка валидации ответа сервера в функции - {inspect.stack()[0][3]}')
 
@@ -144,6 +152,7 @@ class Client(Thread):
     def send_message(self, text, contact):
         message = self.create_message(MESSAGE, self.nickname, text, contact)
         send_message(self.connect, message)
+        self.database.save_history_messages(self.nickname, contact, text)
 
 
 @log
