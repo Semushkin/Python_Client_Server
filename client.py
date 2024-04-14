@@ -119,10 +119,7 @@ class Client(Thread, QObject):
                 # return f'400: {data[ERROR]}'
                 raise ServerError(f'Ошибка ссоединения с сервером! {data[ERROR]}')
         elif ACTION in data and data[ACTION] == MESSAGE:
-            # return {NICKNAME: data[NICKNAME], TEXT: data[TEXT]}
             self.database.save_history_messages(data[NICKNAME], self.nickname, data[TEXT])
-            # return data
-            # self.signal_new_message.emit(data[NICKNAME])
             self.signal_new_message.emit(data[NICKNAME])
             return f'\nПолучено сообщение от {data[NICKNAME]}: {data[TEXT]}'
         raise logs_client.error(f'{MOD} - Ошибка валидации ответа сервера в функции - {inspect.stack()[0][3]}')

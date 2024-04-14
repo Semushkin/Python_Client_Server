@@ -15,6 +15,7 @@ class MainWindow(QMainWindow):
          self.initUI()
          self.load_contacts()
          self.connect_signals()
+         self.message_window = QMessageBox()
          self.show()
 
     def initUI(self):
@@ -58,6 +59,7 @@ class MainWindow(QMainWindow):
         self.text_new_message = QTextEdit(self)
         self.text_new_message.setGeometry(240, 530, 640, 110)
         self.text_new_message.setObjectName('text_new_message')
+        self.text_new_message.setEnabled(False)
 
         self.btn_send_message = QPushButton('Send', self)
         self.btn_send_message.setGeometry(240, 650, 90, 25)
@@ -84,18 +86,20 @@ class MainWindow(QMainWindow):
     def contact_delete(self):
         data = self.contact_list.currentIndex().data()
         if data:
-            info = QMessageBox()
-            info.setWindowTitle('Удаление контакта')
-            info.setText(f'Удалить контакт "{data}" ?')
-            info.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-            button = info.exec()
-            if button == QMessageBox.Yes:
+            if self.message_window.question(self,
+                                         'Удаление контакта',
+                                         f'Удалить контакт "{data}" ?',
+                                         QMessageBox.Yes,
+                                         QMessageBox.No
+                                         ) == QMessageBox.Yes:
                 self.client.delete_contact(data)
                 self.load_contacts()
 
     # Загрузка истории сообщений с выбранным контактом
     def load_messages_list(self):
         current_contact = self.contact_list.currentIndex().data()
+        if current_contact:
+            self.text_new_message.setEnabled(True)
         messages = self.database.get_history_messages_by_contact(current_contact)
         history_messages_model = QStandardItemModel()
         for message in messages:
@@ -113,11 +117,12 @@ class MainWindow(QMainWindow):
         contact = self.contact_list.currentIndex().data()
         if message:
             self.client.send_message(message, contact)
-            print('Сообщение отправлено!')
             self.load_messages_list()
 
     @pyqtSlot(str)
-    def receive_message(self):
+    def receive_message(self, contact):
+        if not self.contact_list.currentIndex().data() == contact:
+            self.message_window.information(self, 'Новое сообщение', f'Получено новое сообщение от {contact}')
         self.load_messages_list()
 
     def connect_signals(self):

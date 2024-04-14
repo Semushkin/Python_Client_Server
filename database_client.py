@@ -54,7 +54,6 @@ class DataBase:
 
     def get_contacts(self):
         """
-
         :return: list of contacts (nickname, nickname, ...)
         """
         return [contact[0] for contact in self.session.query(self.Contacts.nickname).all()]
