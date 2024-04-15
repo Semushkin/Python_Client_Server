@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, create_engine, DateTime, or_
+from sqlalchemy import Column, Integer, String, create_engine, DateTime, or_, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from common.variables import DATABASE_CLIENT
 from sqlalchemy.orm import sessionmaker
@@ -14,6 +14,7 @@ class DataBase:
         __tablename__ = 'Contacts'
         id = Column(Integer, primary_key=True)
         nickname = Column(String, unique=True)
+        unreaded_messages = Column(Boolean, default=False)
 
         def __init__(self, nickname):
             self.nickname = nickname
@@ -56,7 +57,7 @@ class DataBase:
         """
         :return: list of contacts (nickname, nickname, ...)
         """
-        return [contact[0] for contact in self.session.query(self.Contacts.nickname).all()]
+        return [[contact.nickname, contact.unreaded_messages] for contact in self.session.query(self.Contacts).all()]
 
     def add_contact(self, contact):
         if not self.session.query(self.Contacts).filter_by(nickname=contact).count():
@@ -86,6 +87,13 @@ class DataBase:
         #         for message in messages]
         return messages
 
+    def new_message_set(self, contact):
+        contact = self.session.query(self.Contacts).filter_by(nickname=contact).first()
+        contact.unreaded_messages = True
+        self.session.add(contact)
+        self.session.commit()
+        # return f'{contact[0].nickname}, {contact[0].unreaded_messages}'
+
 
 if __name__ == '__main__':
     db_sam = DataBase('Sam')
@@ -97,8 +105,12 @@ if __name__ == '__main__':
     print(db_sam.get_contacts())
     print('---------------------')
 
-    for item in db_sam.get_history_messages_by_contact():
-        print(item)
+    print(db_sam.new_message_set('Robert'))
+    print('---------------------')
+    print(db_sam.get_contacts())
+
+    # for item in db_sam.get_history_messages_by_contact('Robert'):
+    #     print(item)
 
     # db_sam.delete_contact('Johne')
     # print(db_sam.get_contacts())

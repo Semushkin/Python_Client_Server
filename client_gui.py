@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QLabel, QListView, QTextEdit, QPushButton, QDialog, QLineEdit,
-                             QMessageBox)
+                             QMessageBox, QTableView)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import Qt, pyqtSlot
 import sys
@@ -42,6 +42,11 @@ class MainWindow(QMainWindow):
         self.contact_list.setObjectName('contact_list')
         self.contact_list.doubleClicked.connect(self.load_messages_list)
 
+        self.contact_table = QTableView(self)
+        self.contact_table.setGeometry(10, 80, 200, 600)
+        self.contact_list.setObjectName('contact_table')
+        self.contact_table.doubleClicked.connect(self.load_messages_list)
+
         self.label_messages = QLabel(self)
         self.label_messages.setGeometry(240, 10, 100, 20)
         self.label_messages.setObjectName('label_messages')
@@ -70,11 +75,26 @@ class MainWindow(QMainWindow):
     def load_contacts(self):
         contacts = self.database.get_contacts()
         contacts_model = QStandardItemModel()
-        for contact in contacts:
-            item = QStandardItem(contact)
-            item.setEditable(False)
-            contacts_model.appendRow(item)
-        self.contact_list.setModel(contacts_model)
+        contacts_model.setHorizontalHeaderLabels(['Nickname', ' '])
+        # for contact in contacts:
+        #     item = QStandardItem(contact[0])
+        #     item.setEditable(False)
+        #     contacts_model.appendRow(item)
+        # self.contact_list.setModel(contacts_model)
+
+        for row in range(len(contacts)):
+            for column in range(2):
+                if column == 1:
+                    if contacts[row][column]:
+                        item = QStandardItem('new message')
+                    else:
+                        item = QStandardItem(' ')
+                    item.setEnabled(False)
+                else:
+                    item = QStandardItem(contacts[row][column])
+                    item.setEditable(False)
+                contacts_model.setItem(row, column, item)
+        self.contact_table.setModel(contacts_model)
 
     def contact_add(self):
         global add_contact
@@ -97,9 +117,13 @@ class MainWindow(QMainWindow):
 
     # Загрузка истории сообщений с выбранным контактом
     def load_messages_list(self):
-        current_contact = self.contact_list.currentIndex().data()
+        # current_contact = self.contact_list.currentIndex().data()
+        current_contact = self.contact_table.currentIndex().data()
         if current_contact:
             self.text_new_message.setEnabled(True)
+        else:
+            self.text_new_message.setEnabled(False)
+            return False
         messages = self.database.get_history_messages_by_contact(current_contact)
         history_messages_model = QStandardItemModel()
         for message in messages:
