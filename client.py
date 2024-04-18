@@ -25,6 +25,7 @@ thread_lock = Lock()
 
 class Client(Thread, QObject):
     signal_new_message = pyqtSignal(str)
+    connection_lost = pyqtSignal()
 
     def __init__(self, nickname, ip, port, database):
         Thread.__init__(self)
@@ -36,11 +37,13 @@ class Client(Thread, QObject):
         self.database = database
         self.connect = self.connection()
         self.database_refresh()
+        self.close_program = False
         # super().__init__()
 
     def connection(self):
         connect = socket(AF_INET, SOCK_STREAM)
         connect.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        connect.settimeout(5)
 
         #Подключение к серверу
         try:
@@ -72,11 +75,18 @@ class Client(Thread, QObject):
             return connect
 
     def run(self):
-        while True:
+        while not self.close_program:
             time.sleep(1)
-            while thread_lock:
-                self.validation(receive_message(self.connect))
-                print('Получено сообщение!')
+            with thread_lock:
+                try:
+                    self.connect.settimeout(1)
+                    self.validation(receive_message(self.connect))
+                except OSError as err:
+                    if not err.errno:
+                        pass
+                    else:
+                        self.close_program = True
+                        self.connection_lost.emit()
 
     @staticmethod
     @log
@@ -125,31 +135,34 @@ class Client(Thread, QObject):
         raise logs_client.error(f'{MOD} - Ошибка валидации ответа сервера в функции - {inspect.stack()[0][3]}')
 
     def add_contact(self, new_contact):
-        message_out = self.create_message(ADD_CONTACT, self.nickname, contact=new_contact)
-        send_message(self.connect, message_out)
-        message_in = receive_message(self.connect)
-        if RESPONSE in message_in:
-            if message_in[RESPONSE] == 200:
-                self.database.add_contact(new_contact)
-                return True
-            else:
-                return False
+        with thread_lock:
+            message_out = self.create_message(ADD_CONTACT, self.nickname, contact=new_contact)
+            send_message(self.connect, message_out)
+            message_in = receive_message(self.connect)
+            if RESPONSE in message_in:
+                if message_in[RESPONSE] == 200:
+                    self.database.add_contact(new_contact)
+                    return True
+                else:
+                    return False
 
     def delete_contact(self, del_contact):
-        message_out = self.create_message(DEL_CONTACT, self.nickname, contact=del_contact)
-        send_message(self.connect, message_out)
-        message_in = receive_message(self.connect)
-        if RESPONSE in message_in:
-            if message_in[RESPONSE] == 200:
-                self.database.delete_contact(del_contact)
-                return True
-            else:
-                return False
+        with thread_lock:
+            message_out = self.create_message(DEL_CONTACT, self.nickname, contact=del_contact)
+            send_message(self.connect, message_out)
+            message_in = receive_message(self.connect)
+            if RESPONSE in message_in:
+                if message_in[RESPONSE] == 200:
+                    self.database.delete_contact(del_contact)
+                    return True
+                else:
+                    return False
 
     def send_message(self, text, contact):
-        message = self.create_message(MESSAGE, self.nickname, text, contact)
-        send_message(self.connect, message)
-        self.database.save_history_messages(self.nickname, contact, text)
+        with thread_lock:
+            message = self.create_message(MESSAGE, self.nickname, text, contact)
+            send_message(self.connect, message)
+            self.database.save_history_messages(self.nickname, contact, text)
 
 
 @log
@@ -189,7 +202,6 @@ if __name__ == '__main__':
         client.start()
     except ServerError as e:
         print(f'{e.text}')
-        # exit(1)
         message = QMessageBox()
         message.setWindowTitle('Ошибка!!!')
         message.setText(f'{e.text}. Попробуйте позже')

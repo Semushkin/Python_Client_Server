@@ -82,9 +82,6 @@ class DataBase:
             self.HistoryMessage.sender == contact,
             self.HistoryMessage.recipient == contact
         ))
-        # return [[message.sender, message.recipient, message.message, message.date] for message in messages]
-        # return [f'from {message.sender}, to {message.recipient}, date {message.date}\n {message.message}'
-        #         for message in messages]
         return messages
 
     def new_message_set(self, contact):
@@ -92,7 +89,12 @@ class DataBase:
         contact.unreaded_messages = True
         self.session.add(contact)
         self.session.commit()
-        # return f'{contact[0].nickname}, {contact[0].unreaded_messages}'
+
+    def new_message_clean(self, contact):
+        contact = self.session.query(self.Contacts).filter_by(nickname=contact).first()
+        contact.unreaded_messages = False
+        self.session.add(contact)
+        self.session.commit()
 
 
 if __name__ == '__main__':

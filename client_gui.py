@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QLabel, QListView, QTextEdit, QPushButton, QDialog, QLineEdit,
                              QMessageBox, QTableView)
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 from PyQt5.QtCore import Qt, pyqtSlot
 import sys
 
@@ -9,13 +9,13 @@ class MainWindow(QMainWindow):
 
     def __init__(self, database, client):
          super().__init__()
-         self.btn_send_message = None
          self.database = database
          self.client = client
          self.initUI()
          self.load_contacts()
          self.connect_signals()
          self.message_window = QMessageBox()
+         self.active_chat = None
          self.show()
 
     def initUI(self):
@@ -37,18 +37,14 @@ class MainWindow(QMainWindow):
         self.btn_contact_delete.setObjectName('btn_contact_delete')
         self.btn_contact_delete.clicked.connect(self.contact_delete)
 
-        self.contact_list = QListView(self)
-        self.contact_list.setGeometry(10, 80, 200, 600)
-        self.contact_list.setObjectName('contact_list')
-        self.contact_list.doubleClicked.connect(self.load_messages_list)
-
         self.contact_table = QTableView(self)
         self.contact_table.setGeometry(10, 80, 200, 600)
-        self.contact_list.setObjectName('contact_table')
-        self.contact_table.doubleClicked.connect(self.load_messages_list)
+        self.contact_table.setObjectName('contact_table')
+        self.contact_table.doubleClicked.connect(self.select_contact)
 
         self.label_messages = QLabel(self)
-        self.label_messages.setGeometry(240, 10, 100, 20)
+        self.label_messages.setGeometry(240, 10, 300, 30)
+        self.label_messages.setFont(QFont('Times', 14))
         self.label_messages.setObjectName('label_messages')
         self.label_messages.setText('Messages')
 
@@ -76,11 +72,6 @@ class MainWindow(QMainWindow):
         contacts = self.database.get_contacts()
         contacts_model = QStandardItemModel()
         contacts_model.setHorizontalHeaderLabels(['Nickname', ' '])
-        # for contact in contacts:
-        #     item = QStandardItem(contact[0])
-        #     item.setEditable(False)
-        #     contacts_model.appendRow(item)
-        # self.contact_list.setModel(contacts_model)
 
         for row in range(len(contacts)):
             for column in range(2):
@@ -95,6 +86,7 @@ class MainWindow(QMainWindow):
                     item.setEditable(False)
                 contacts_model.setItem(row, column, item)
         self.contact_table.setModel(contacts_model)
+        self.contact_table.resizeColumnsToContents()
 
     def contact_add(self):
         global add_contact
@@ -104,27 +96,30 @@ class MainWindow(QMainWindow):
         self.load_contacts()
 
     def contact_delete(self):
-        data = self.contact_list.currentIndex().data()
-        if data:
+        contact = self.contact_table.currentIndex().data()
+        if contact:
             if self.message_window.question(self,
                                          'Удаление контакта',
-                                         f'Удалить контакт "{data}" ?',
+                                         f'Удалить контакт "{contact}" ?',
                                          QMessageBox.Yes,
                                          QMessageBox.No
                                          ) == QMessageBox.Yes:
-                self.client.delete_contact(data)
+                self.client.delete_contact(contact)
                 self.load_contacts()
+
+    def select_contact(self):
+        self.active_chat = self.contact_table.currentIndex().data()
+        self.label_messages.setText(f'Чат с пользователем - {self.active_chat}')
+        self.load_messages_list()
 
     # Загрузка истории сообщений с выбранным контактом
     def load_messages_list(self):
-        # current_contact = self.contact_list.currentIndex().data()
-        current_contact = self.contact_table.currentIndex().data()
-        if current_contact:
+        if self.active_chat:
             self.text_new_message.setEnabled(True)
         else:
             self.text_new_message.setEnabled(False)
             return False
-        messages = self.database.get_history_messages_by_contact(current_contact)
+        messages = self.database.get_history_messages_by_contact(self.active_chat)
         history_messages_model = QStandardItemModel()
         for message in messages:
             item = QStandardItem(f'from {message.sender}, to {message.recipient}, date {message.date}\n {message.message}')
@@ -132,25 +127,36 @@ class MainWindow(QMainWindow):
                 item.setTextAlignment(Qt.AlignRight)
             item.setEditable(False)
             history_messages_model.appendRow(item)
+        self.database.new_message_clean(self.active_chat)
+        self.load_contacts()
         self.messages_list.setModel(history_messages_model)
         self.messages_list.scrollToBottom()
 
     def send_message(self):
         message = self.text_new_message.toPlainText()
-        self.text_new_message.clear()
-        contact = self.contact_list.currentIndex().data()
         if message:
+            self.text_new_message.clear()
+            contact = self.active_chat
             self.client.send_message(message, contact)
             self.load_messages_list()
 
     @pyqtSlot(str)
     def receive_message(self, contact):
-        if not self.contact_list.currentIndex().data() == contact:
+        if not self.active_chat == contact:
+            self.database.new_message_set(contact)
+            self.load_contacts()
             self.message_window.information(self, 'Новое сообщение', f'Получено новое сообщение от {contact}')
-        self.load_messages_list()
+        else:
+            self.load_messages_list()
+
+    @pyqtSlot()
+    def connection_lost(self):
+        self.message_window.critical(self, 'Ошибка!!!', 'Потеряно ссоединение!')
+        self.close()
 
     def connect_signals(self):
         self.client.signal_new_message.connect(self.receive_message)
+        self.client.connection_lost.connect(self.connection_lost)
 
 
 class EnterWindow(QDialog):
