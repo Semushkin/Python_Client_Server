@@ -22,7 +22,7 @@ def create_connections_model(database):
 def create_stat_model(database):
     history_list = database.get_history()
     model = QStandardItemModel()
-    model.setHorizontalHeaderLabels(['Клиент', 'Дата входа','IP адрес'])
+    model.setHorizontalHeaderLabels(['Клиент','IP адрес', 'Дата входа'])
     for row in history_list:
         client, date, ip = row
         client = QStandardItem(client)
