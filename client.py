@@ -26,6 +26,7 @@ thread_lock = Lock()
 class Client(Thread, QObject):
     signal_new_message = pyqtSignal(str)
     connection_lost = pyqtSignal()
+    signal_new_contact = pyqtSignal(str)
 
     def __init__(self, nickname, ip, port, database):
         Thread.__init__(self)
@@ -129,6 +130,9 @@ class Client(Thread, QObject):
                 # return f'400: {data[ERROR]}'
                 raise ServerError(f'Ошибка ссоединения с сервером! {data[ERROR]}')
         elif ACTION in data and data[ACTION] == MESSAGE:
+            if not self.database.check_contact(data[NICKNAME]):
+                # self.add_contact(data[NICKNAME])
+                self.signal_new_contact.emit(data[NICKNAME])
             self.database.save_history_messages(data[NICKNAME], self.nickname, data[TEXT])
             self.signal_new_message.emit(data[NICKNAME])
             return f'\nПолучено сообщение от {data[NICKNAME]}: {data[TEXT]}'

@@ -59,24 +59,43 @@ class DataBase:
         """
         return [[contact.nickname, contact.unreaded_messages] for contact in self.session.query(self.Contacts).all()]
 
-    def add_contact(self, contact):
-        if not self.session.query(self.Contacts).filter_by(nickname=contact).count():
-            new_contact = self.Contacts(contact)
+    def check_contact(self, nickname: str):
+        """
+
+        :param nickname: nickname of contact
+        :return: None
+        """
+        if self.session.query(self.Contacts).filter_by(nickname=nickname).count():
+            return True
+        return False
+
+    def add_contact(self, nickname: str) -> None:
+        if not self.session.query(self.Contacts).filter_by(nickname=nickname).count():
+            new_contact = self.Contacts(nickname)
             self.session.add(new_contact)
             self.session.commit()
 
     def delete_contact(self, contact):
         self.session.query(self.Contacts).filter_by(nickname=contact).delete()
 
-    def save_history_messages(self, sender, recipient, message):
+    def save_history_messages(self, sender: str, recipient: str, message: str) -> None:
+        """
+
+        :param sender:  nickname sender
+        :param recipient: nickname recipient
+        :param message:
+        :return: None
+        """
         message = self.HistoryMessage(sender, recipient, message)
         self.session.add(message)
         self.session.commit()
 
-    def get_history_messages_by_contact(self, contact):
+    def get_history_messages_by_contact(self, contact) -> list:
         """
+        get list of messages
+
         :param contact: contact
-        :return: list of messages
+        :return: list
         """
         messages = self.session.query(self.HistoryMessage).filter(or_(
             self.HistoryMessage.sender == contact,
@@ -84,17 +103,27 @@ class DataBase:
         ))
         return messages
 
-    def new_message_set(self, contact):
-        contact = self.session.query(self.Contacts).filter_by(nickname=contact).first()
+    def new_message_set(self, nickname: str):
+        contact = self.session.query(self.Contacts).filter_by(nickname=nickname).first()
         contact.unreaded_messages = True
         self.session.add(contact)
         self.session.commit()
 
-    def new_message_clean(self, contact):
-        contact = self.session.query(self.Contacts).filter_by(nickname=contact).first()
+    def new_message_clean(self, nickname: str):
+        contact = self.session.query(self.Contacts).filter_by(nickname=nickname).first()
         contact.unreaded_messages = False
         self.session.add(contact)
         self.session.commit()
+
+    def check_new_messages(self, nickname: str):
+        """
+        :param nickname: str
+        :return: Return true if flag "new message" set
+        """
+        contact = self.session.query(self.Contacts).filter_by(nickname=nickname).first()
+        if contact.unreaded_messages:
+            return True
+        return False
 
 
 if __name__ == '__main__':

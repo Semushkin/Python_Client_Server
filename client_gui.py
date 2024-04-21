@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
         self.contact_table.doubleClicked.connect(self.select_contact)
 
         self.label_messages = QLabel(self)
-        self.label_messages.setGeometry(240, 10, 300, 30)
+        self.label_messages.setGeometry(240, 10, 500, 30)
         self.label_messages.setFont(QFont('Times', 14))
         self.label_messages.setObjectName('label_messages')
         self.label_messages.setText('Messages')
@@ -142,7 +142,7 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(str)
     def receive_message(self, contact):
-        if not self.active_chat == contact:
+        if not self.active_chat == contact and not self.database.check_new_messages(contact):
             self.database.new_message_set(contact)
             self.load_contacts()
             self.message_window.information(self, 'Новое сообщение', f'Получено новое сообщение от {contact}')
@@ -154,9 +154,15 @@ class MainWindow(QMainWindow):
         self.message_window.critical(self, 'Ошибка!!!', 'Потеряно ссоединение!')
         self.close()
 
+    @pyqtSlot(str)
+    def new_contact(self, nickname: str) -> None:
+        self.client.add_contact(nickname)
+        self.load_contacts()
+
     def connect_signals(self):
         self.client.signal_new_message.connect(self.receive_message)
         self.client.connection_lost.connect(self.connection_lost)
+        self.client.signal_new_contact.connect(self.new_contact)
 
 
 class EnterWindow(QDialog):
@@ -213,7 +219,7 @@ class EnterWindow(QDialog):
 
 
 class NewContact(QDialog):
-    def __init__(self, database=None, client=None):
+    def __init__(self, database, client):
         super().__init__()
         self.database = database
         self.client = client
