@@ -1,11 +1,12 @@
 import os.path
 import sys
-from common.variables import DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE, ERROR, ACTION, \
-    ANSWER, MESSAGE, FROM, NICKNAME, TEXT, TO, EXIT, GET_CONTACT, ADD_CONTACT, DEL_CONTACT, CONTACTS, CONTACT_NAME
+from common.variables import (DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE, ERROR, ACTION, \
+    ANSWER, MESSAGE, FROM, NICKNAME, TEXT, TO, EXIT, GET_CONTACT, ADD_CONTACT, DEL_CONTACT, \
+    CONTACTS, CONTACT_NAME, DATA, ACCESS)
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from common.utils import receive_message, send_message
 import logging
-from logs.decor import log
+from logs.decor import log, login_required
 # import logs.server_log_config
 import inspect
 import argparse
@@ -19,6 +20,10 @@ from server_gui import (MainWindow, HistoryWindow, ConfigWindow, create_stat_mod
                         ClientsWindow, create_clients_list)
 import configparser
 from PyQt5.QtCore import QTimer
+from binascii import hexlify, a2b_base64
+from os import urandom
+import hmac
+
 
 logs_server = logging.getLogger('app.server')
 MOD = inspect.stack()[0][1].split("/")[-1]
@@ -126,31 +131,50 @@ class Server(Thread, metaclass=ServerVerifier):
             self.messages.clear()
 
     @log
+    @login_required
     def validation(self, data, client):
+
+        if not data[ACCESS]:
+            try:
+                send_message(client, {RESPONSE: 400, ERROR: 'Bad Request'})
+            except OSError:
+                client.close()
+
         global new_connection
+
+        # Подключение клиента
         if ACTION in data and data[ACTION] == PRESENCE:
             if data[NICKNAME] in self.clients_name.keys():
-                send_message(client, {RESPONSE: 400, ERROR: 'Nickname has already been registered'})
+                send_message(client, {RESPONSE: 400, ERROR: 'Пользователь уже подключен'})
                 return
-            self.clients_name[data[NICKNAME]] = client
-            print(f'Подключился клиент {data[NICKNAME]}')
-            with conflag_lock:
-                new_connection = True
-            ip, port = client.getpeername()
-            self.database.client_entry(data[NICKNAME], ip)
-            send_message(client, {RESPONSE: 200})
-            logs_server.info(f'Установлено соединения с клиентом "{data[NICKNAME]}", с адресом {ip}')
-            self.clients.append(client)
-            # return {RESPONSE: 200, NICKNAME: data[NICKNAME]}
+
+            self.authorization(data, client)
+
+            # self.clients_name[data[NICKNAME]] = client
+            # print(f'Подключился клиент {data[NICKNAME]}')
+            # with conflag_lock:
+            #     new_connection = True
+            # ip, port = client.getpeername()
+            # self.database.client_entry(data[NICKNAME], ip)
+            # send_message(client, {RESPONSE: 200})
+            # logs_server.info(f'Установлено соединения с клиентом "{data[NICKNAME]}", с адресом {ip}')
+            # self.clients.append(client)
+            # # return {RESPONSE: 200, NICKNAME: data[NICKNAME]}
+
+        # Обработка сообщения клиента
         elif ACTION in data and data[ACTION] == MESSAGE:
             logs_server.info(f'Получено сообщение от "{data[NICKNAME]}", для {data[TO]}')
             return {ACTION: MESSAGE, NICKNAME: data[NICKNAME], TEXT: data[TEXT], TO: data[TO]}
+
+        #  Клиент выходит
         elif ACTION in data and data[ACTION] == EXIT:
             return {ACTION: EXIT, NICKNAME: data[NICKNAME]}
+
         elif ACTION in data and data[ACTION] == GET_CONTACT:
             send_message(client, {RESPONSE: 202, CONTACTS: self.database.get_contacts(data[NICKNAME])})
             # return {RESPONSE: 202, 'alert': self.database.get_contacts(data[NICKNAME])}
             return data
+
         elif ACTION in data and data[ACTION] == ADD_CONTACT:
             if self.database.add_contact(data[NICKNAME], data[CONTACT_NAME]):
                 send_message(client, {RESPONSE: 200})
@@ -167,6 +191,63 @@ class Server(Thread, metaclass=ServerVerifier):
             logs_server.warning(f'{MOD} - клиенту отправлен код 400 в функции - "{inspect.stack()[0][3]}"')
             send_message(client, {RESPONSE: 400, ERROR: 'Bad Request'})
             # return {RESPONSE: 400, ERROR: 'Bad Request'}
+
+    def authorization(self, data, client):
+        global new_connection
+        # Проверяем есть ли ткой пользователь
+        if not self.database.check_client(data[NICKNAME]):
+            try:
+                send_message(client, {RESPONSE: 400, ERROR: 'Пользователь не зарегистриован'})
+                print(f'Пользователь {data[NICKNAME]}:  не зарегистрирован')
+            except OSError:
+                pass
+        else:
+            # hash представление
+            random_str = hexlify(urandom(64))
+            message_out = {
+                RESPONSE: 511,
+                DATA: random_str.decode('ascii')
+            }
+            try:
+                send_message(client, message_out)
+                answer = receive_message(client)
+            except OSError:
+                client.close()
+                print(f'Пользователь {data[NICKNAME]}:  Ошибка отправки хэш авторизации')
+                return
+            client_digest = a2b_base64(answer[DATA])
+            if RESPONSE in answer and answer[RESPONSE] == 511:
+                hash = hmac.new(
+                    self.database.get_client_by_name(answer[NICKNAME]).password_hash,
+                    random_str,
+                    'MD5'
+                )
+                digest = hash.digest()
+                if hmac.compare_digest(digest, client_digest):
+                    self.clients_name[data[NICKNAME]] = client
+                    print(f'Подключился клиент {data[NICKNAME]}')
+                    with conflag_lock:
+                        new_connection = True
+                    ip, port = client.getpeername()
+                    self.database.client_entry(data[NICKNAME], ip)
+                    send_message(client, {RESPONSE: 200})
+                    logs_server.info(f'Установлено соединения с клиентом "{data[NICKNAME]}", с адресом {ip}')
+                    self.clients.append(client)
+                else:
+                    try:
+                        send_message(client, {RESPONSE: 400, ERROR: 'Invalid username or password.'})
+                        print(f'Пользователь {data[NICKNAME]}:  Не верный пароль')
+                    except OSError:
+                        client.close()
+            else:
+                try:
+                    send_message(client, {RESPONSE: 400, ERROR: 'Invalid username or password.'})
+                except OSError:
+                    client.close()
+
+
+
+
 
     @staticmethod
     @log
@@ -225,7 +306,7 @@ if __name__ == '__main__':
 
     def show_clients():
         global clients_list
-        clients_list = ClientsWindow()
+        clients_list = ClientsWindow(database)
         clients_list.client_table.setModel(create_clients_list(database))
         clients_list.client_table.resizeColumnsToContents()
         clients_list.client_table.resizeRowsToContents()

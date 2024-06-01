@@ -77,6 +77,7 @@ class DataBase:
 
     def delete_contact(self, contact):
         self.session.query(self.Contacts).filter_by(nickname=contact).delete()
+        self.session.commit()
 
     def save_history_messages(self, sender: str, recipient: str, message: str) -> None:
         """

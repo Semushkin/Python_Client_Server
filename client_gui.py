@@ -170,8 +170,9 @@ class EnterWindow(QDialog):
     def __init__(self):
         super().__init__()
         self.nickname = ''
-        self.address = ''
-        self.port = ''
+        self.password = ''
+        # self.address = ''
+        # self.port = ''
 
         self.setFixedSize(270, 220)
         self.setWindowTitle('Login')
@@ -185,17 +186,23 @@ class EnterWindow(QDialog):
         self.edit_nickname = QLineEdit(self)
         self.edit_nickname.setGeometry(100, 50, 120, 25)
 
-        self.label_address = QLabel('IP Address', self)
-        self.label_address.setGeometry(20, 90, 70, 20)
+        self.label_password = QLabel('Password', self)
+        self.label_password.setGeometry(20, 90, 70, 20)
 
-        self.edit_address = QLineEdit(self)
-        self.edit_address.setGeometry(100, 90, 120, 25)
+        self.edit_password = QLineEdit(self)
+        self.edit_password.setGeometry(100, 90, 120, 25)
 
-        self.label_port = QLabel('Port', self)
-        self.label_port.setGeometry(20, 130, 70, 20)
+        # self.label_address = QLabel('IP Address', self)
+        # self.label_address.setGeometry(20, 90, 70, 20)
+        #
+        # self.edit_address = QLineEdit(self)
+        # self.edit_address.setGeometry(100, 90, 120, 25)
 
-        self.edit_port = QLineEdit(self)
-        self.edit_port.setGeometry(100, 130, 120, 25)
+        # self.label_port = QLabel('Port', self)
+        # self.label_port.setGeometry(20, 130, 70, 20)
+        #
+        # self.edit_port = QLineEdit(self)
+        # self.edit_port.setGeometry(100, 130, 120, 25)
 
         self.btn_enter = QPushButton('Login', self)
         self.btn_enter.setGeometry(20, 180, 90, 25)
@@ -213,8 +220,9 @@ class EnterWindow(QDialog):
             message.warning(self, 'Ошибка!!!' ,'Не верное имя пользователя')
         else:
             self.nickname = self.edit_nickname.text()
-            self.address = self.edit_address.text()
-            self.port = self.edit_port.text()
+            self.password = self.edit_password.text()
+            # self.address = self.edit_address.text()
+            # self.port = self.edit_port.text()
             self.close()
 
 

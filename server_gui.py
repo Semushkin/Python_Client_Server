@@ -1,8 +1,10 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QAction, qApp, QLabel, QTableView, QApplication, QDialog, QPushButton, \
-    QLineEdit, QFileDialog
+    QLineEdit, QFileDialog, QMessageBox
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 import sys
+from hashlib import pbkdf2_hmac
+from binascii import hexlify
 
 
 def create_connections_model(database):
@@ -108,14 +110,24 @@ class HistoryWindow(QDialog):
 
 
 class ClientsWindow(QDialog):
-    def __init__(self):
+    def __init__(self, database):
         super().__init__()
+        self.database = database
+        self.message = QMessageBox()
         self.initUI()
 
     def initUI(self):
         self.setWindowTitle('Список зарегистрированных клиентов')
         self.setFixedSize(350, 470)
         self.setAttribute(Qt.WA_DeleteOnClose)
+
+        self.btn_add_client = QPushButton('Добавить', self)
+        self.btn_add_client.move(10, 440)
+        self.btn_add_client.clicked.connect(self.add_client)
+
+        self.btn_delete_client = QPushButton('Удалить', self)
+        self.btn_delete_client.move(100, 440)
+        self.btn_delete_client.clicked.connect(self.delete_client)
 
         self.close_button = QPushButton('Закрыть', self)
         self.close_button.move(250, 440)
@@ -126,6 +138,33 @@ class ClientsWindow(QDialog):
         self.client_table.setFixedSize(300, 420)
 
         self.show()
+
+    def add_client(self):
+        global add_new_client
+        add_new_client = AddClient(self.database)
+        # add_new_client.show()
+        add_new_client.exec_()
+        self.update_table()
+        # self.message.information(self, 'rrrrrrrrrrrr rrrrrrrrrrrr', 'rrrrrrrrrrrr')
+
+    def delete_client(self):
+        client = self.client_table.currentIndex().data()
+
+        if client:
+            if self.message.question(
+                    self,
+                    'Удаление клиента',
+                    f'Удалить контакт "{client}" ?',
+                    QMessageBox.Yes,
+                    QMessageBox.No
+            ) == QMessageBox.Yes:
+                self.database.delete_client(client)
+                self.update_table()
+
+    def update_table(self):
+        self.client_table.setModel(create_clients_list(self.database))
+        self.client_table.resizeColumnsToContents()
+        self.client_table.resizeRowsToContents()
 
 
 class ConfigWindow(QDialog):
@@ -196,7 +235,74 @@ class ConfigWindow(QDialog):
         self.show()
 
 
+class AddClient(QDialog):
+    def __init__(self, database):
+        super().__init__()
+        self.database = database
+        self.initUI()
+
+    def initUI(self):
+
+        self.message = QMessageBox()
+
+        self.setWindowTitle('Добавление нового клиента')
+        self.setFixedSize(350, 200)
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
+        self.close_button = QPushButton('Закрыть', self)
+        self.close_button.move(250, 440)
+        self.close_button.clicked.connect(self.close)
+
+        self.label_nickname = QLabel('Nickname', self)
+        self.label_nickname.setGeometry(20, 50, 100, 20)
+
+        self.edit_nickname = QLineEdit(self)
+        self.edit_nickname.setGeometry(130, 50, 160, 25)
+
+        self.label_password_1 = QLabel('Password', self)
+        self.label_password_1.setGeometry(20, 90, 100, 20)
+
+        self.edit_password_1 = QLineEdit(self)
+        self.edit_password_1.setGeometry(130, 90, 160, 25)
+
+        self.label_password_2 = QLabel('Password (Repeat)', self)
+        self.label_password_2.setGeometry(20, 130, 100, 20)
+
+        self.edit_password_2 = QLineEdit(self)
+        self.edit_password_2.setGeometry(130, 130, 160, 25)
+
+        self.btn_save = QPushButton('Сохранить', self)
+        self.btn_save.setGeometry(20, 170, 100, 20)
+        self.btn_save.clicked.connect(self.save)
+
+        self.btn_cancel = QPushButton('Отмена', self)
+        self.btn_cancel.setGeometry(200, 170, 100, 20)
+        self.btn_cancel.clicked.connect(self.close)
+
+        self.show()
+
+    def save(self):
+        if not self.edit_nickname.text() or not self.edit_password_1.text() or not self.edit_password_2.text():
+            self.message.critical(self, 'Ошибка!!!', 'Ошибка! Форма не заполнена')
+            # self.close()
+        else:
+            if self.database.get_client_by_name(self.edit_nickname.text()):
+                self.message.critical(self, 'Ошибка!!!', 'Ошибка! Данный пользователь уже заергистрирован.')
+            elif self.edit_password_1.text() != self.edit_password_2.text():
+                self.message.critical(self, 'Ошибка!!!', 'Ошибка! Пароли не совпадают')
+            else:
+                passwd = self.edit_password_1.text().encode('utf-8')
+                salt = self.edit_nickname.text().lower().encode('utf-8')
+                passwd = pbkdf2_hmac('sha512', passwd, salt, 10000)
+
+                self.database.add_client(self.edit_nickname.text(), hexlify(passwd))
+
+                self.message.information(self, 'Добавление пользователя', 'Добавлено!')
+                self.close()
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    main = MainWindow()
+    # main = MainWindow()
+    add_client = AddClient()
     app.exec_()

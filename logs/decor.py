@@ -22,7 +22,9 @@ def main():
 
 import logging
 import inspect
+from socket import socket
 #import client_log_config
+from pprint import pprint
 
 CLIENT_M = 'client.py'
 SERVER_M = 'server.py'
@@ -42,3 +44,18 @@ def log(func):
             logs_server.info(f'{received_from} - функция "{func.__name__}" вызвана из функции "{parent_func}"')
         return func(*args, **kwargs)
     return wrapper
+
+
+def login_required(func):
+    from common.variables import ACTION, PRESENCE, NICKNAME, ACCESS
+
+    def wrapper(*args, **kwargs):
+        args[1][ACCESS] = False
+        if isinstance(args[2], socket):
+            if args[1].get(ACTION) == PRESENCE:
+                args[1][ACCESS] = True
+            elif args[1].get(NICKNAME) and args[1].get(NICKNAME) in args[0].clients_name:
+                args[1][ACCESS] = True
+        return func(*args, **kwargs)
+    return wrapper
+

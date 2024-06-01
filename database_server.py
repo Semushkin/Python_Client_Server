@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
@@ -12,9 +12,12 @@ class DataBase:
         __tablename__ = 'Clients'
         id = Column(Integer, primary_key=True)
         nickname = Column(String, unique=True)
+        password_hash = Column(String, unique=True)
+        public_key = Column(Text)
 
-        def __init__(self, nickname):
+        def __init__(self, nickname, password):
             self.nickname = nickname
+            self.password_hash = password
 
         def __str__(self):
             return self.nickname
@@ -71,14 +74,21 @@ class DataBase:
         self.session.query(self.ActiveClients).delete()
         self.session.commit()
 
+    def get_client_by_name(self, nickname):
+        return self.session.query(self.Clients).filter_by(nickname=nickname).first()
+
+    def add_client(self, nickname, passwd):
+        client = self.Clients(nickname, passwd)
+        self.session.add(client)
+        self.session.commit()
+
+    def delete_client(self, nickname):
+        self.session.query(self.Clients).filter_by(nickname=nickname).delete()
+        self.session.commit()
+
     def client_entry(self, nickname, ip):
-        client = self.session.query(self.Clients).filter_by(nickname=nickname)
-        if not client.count():
-            client = self.Clients(nickname=nickname)
-            self.session.add(client)
-            self.session.commit()
-        else:
-            client = client.first()
+
+        client = self.session.query(self.Clients).filter_by(nickname=nickname).first()
 
         active = self.ActiveClients(client.id, ip)
         history = self.History(client.id, datetime.now(), ip)
@@ -86,6 +96,21 @@ class DataBase:
         self.session.add(history)
         self.session.commit()
 
+
+    # def client_entry(self, nickname, ip):
+    #     client = self.session.query(self.Clients).filter_by(nickname=nickname)
+    #     if not client.count():
+    #         client = self.Clients(nickname=nickname)
+    #         self.session.add(client)
+    #         self.session.commit()
+    #     else:
+    #         client = client.first()
+    #
+    #     active = self.ActiveClients(client.id, ip)
+    #     history = self.History(client.id, datetime.now(), ip)
+    #     self.session.add(active)
+    #     self.session.add(history)
+    #     self.session.commit()
 
     def client_exit(self, nickname):
         client = self.session.query(self.Clients).filter_by(nickname=nickname).first()
@@ -139,6 +164,11 @@ class DataBase:
 
     def get_all_contacts(self):
         return self.session.query(self.Contacts).join(self.Clients)
+
+    def check_client(self, nickname):
+        if self.session.query(self.Clients).filter_by(nickname=nickname).count():
+            return True
+        return False
 
 
 if __name__ == '__main__':

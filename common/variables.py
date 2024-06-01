@@ -21,3 +21,6 @@ DEFAULT_IP = '127.0.0.1'
 MAX_DATA_LENGTH = 1024
 DATABASE_SERVER = 'sqlite:///database_server.db3'
 DATABASE_CLIENT = 'sqlite:///database_client.db3'
+PUBLIC_KEY = 'public_key'
+DATA = 'bin'
+ACCESS = 'access'
