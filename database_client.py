@@ -2,9 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, create_engine, DateTime, or_, Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from common.variables import DATABASE_CLIENT
 from sqlalchemy.orm import sessionmaker
-from pprint import pprint
 
 
 class DataBase:
@@ -128,26 +126,4 @@ class DataBase:
 
 
 if __name__ == '__main__':
-    db_sam = DataBase('Sam')
-
-    db_sam.add_contact('Robert')
-    db_sam.add_contact('John')
-    db_sam.add_contact('Jack')
-
-    print(db_sam.get_contacts())
-    print('---------------------')
-
-    print(db_sam.new_message_set('Robert'))
-    print('---------------------')
-    print(db_sam.get_contacts())
-
-    # for item in db_sam.get_history_messages_by_contact('Robert'):
-    #     print(item)
-
-    # db_sam.delete_contact('Johne')
-    # print(db_sam.get_contacts())
-    # contacts = [contact[0] for contact in db_sam.get_contacts()]
-    # print(contacts)
-    # for contact in db_sam.get_contacts():
-    #     print(contact)
-
+    pass

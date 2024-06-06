@@ -96,22 +96,6 @@ class DataBase:
         self.session.add(history)
         self.session.commit()
 
-
-    # def client_entry(self, nickname, ip):
-    #     client = self.session.query(self.Clients).filter_by(nickname=nickname)
-    #     if not client.count():
-    #         client = self.Clients(nickname=nickname)
-    #         self.session.add(client)
-    #         self.session.commit()
-    #     else:
-    #         client = client.first()
-    #
-    #     active = self.ActiveClients(client.id, ip)
-    #     history = self.History(client.id, datetime.now(), ip)
-    #     self.session.add(active)
-    #     self.session.add(history)
-    #     self.session.commit()
-
     def client_exit(self, nickname):
         client = self.session.query(self.Clients).filter_by(nickname=nickname).first()
         self.session.query(self.ActiveClients).filter_by(client_id=client.id).delete()
@@ -172,16 +156,4 @@ class DataBase:
 
 
 if __name__ == '__main__':
-    db = DataBase()
-    # print(db.get_contacts('Sam'))
-    # print(db.get_all_client())
-    db.add_contact('Sam','Jaaack')
-
-    # print(db.get_all_contacts())
-    # result = db.get_all_contacts()
-    # for item in result:
-    #     print(item)
-    # print(db.get_contacts('Sam'))
-    print(f'Список зарегистрированных пользователей {db.get_all_client()}')
-    for client in db.get_all_client():
-        print(f'Список контактов пльзователя {client}: {db.get_contacts(client)}')
+    pass

@@ -1,29 +1,30 @@
 import os.path
 import sys
-from common.variables import (DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE, ERROR, ACTION, \
-    ANSWER, MESSAGE, FROM, NICKNAME, TEXT, TO, EXIT, GET_CONTACT, ADD_CONTACT, DEL_CONTACT, \
-    CONTACTS, CONTACT_NAME, DATA, ACCESS)
-from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
-from common.utils import receive_message, send_message
 import logging
-from logs.decor import log, login_required
-# import logs.server_log_config
 import inspect
 import argparse
 import select
-from metaclasses import ServerVerifier
-from descriptrs import Port
-from threading import Thread, Lock
-from database_server import DataBase
-from PyQt5.QtWidgets import QApplication, QMessageBox
-from server_gui import (MainWindow, HistoryWindow, ConfigWindow, create_stat_model, create_connections_model,
-                        ClientsWindow, create_clients_list)
+import hmac
 import configparser
-from PyQt5.QtCore import QTimer
+from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
+from threading import Thread, Lock
 from binascii import hexlify, a2b_base64
 from os import urandom
-import hmac
 
+from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtCore import QTimer
+
+from common.variables import (DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE, ERROR, ACTION,
+                              MESSAGE, NICKNAME, TEXT, TO, EXIT, GET_CONTACT, ADD_CONTACT, DEL_CONTACT,
+                              CONTACTS, CONTACT_NAME, DATA, ACCESS)
+from common.utils import receive_message, send_message
+from logs.decor import log, login_required
+# import logs.server_log_config
+from server_gui import (MainWindow, HistoryWindow, ConfigWindow, create_stat_model, create_connections_model,
+                        ClientsWindow, create_clients_list)
+from metaclasses import ServerVerifier
+from descriptrs import Port
+from database_server import DataBase
 
 logs_server = logging.getLogger('app.server')
 MOD = inspect.stack()[0][1].split("/")[-1]
@@ -34,6 +35,7 @@ conflag_lock = Lock()
 
 @log
 def arg_data():
+    """Функция парсинга агуиментов переданных при запуске сервера из консоли"""
     parse = argparse.ArgumentParser()
     parse.add_argument('-a', default=DEFAULT_IP, help='IP adress', nargs='?')
     parse.add_argument('-p', default=DEFAULT_PORT, help='PORT', type=int, nargs='?')
@@ -45,12 +47,12 @@ def arg_data():
 
 
 class Server(Thread, metaclass=ServerVerifier):
+    """Главный класс сервера"""
     port = Port()
 
     def __init__(self, ip, port, database):
         self.ip = ip
         self.port = port
-        #self.database = DataBase()
         self.database = database
         self.clients = []
         self.messages = []
@@ -61,10 +63,10 @@ class Server(Thread, metaclass=ServerVerifier):
         print(f'Запущен сервер с праметрами: ip = "{self.ip}", port = {self.port}')
         self.connection.settimeout(0.5)
         self.connection.listen(5)
-        # self.run()
         super().__init__()
 
     def run(self):
+        """ Основной метод работы сервера"""
         global new_connection
         while True:
             try:
@@ -133,7 +135,7 @@ class Server(Thread, metaclass=ServerVerifier):
     @log
     @login_required
     def validation(self, data, client):
-
+        """Метод валидации сообщений полученных от клиентов"""
         if not data[ACCESS]:
             try:
                 send_message(client, {RESPONSE: 400, ERROR: 'Bad Request'})
@@ -149,17 +151,6 @@ class Server(Thread, metaclass=ServerVerifier):
                 return
 
             self.authorization(data, client)
-
-            # self.clients_name[data[NICKNAME]] = client
-            # print(f'Подключился клиент {data[NICKNAME]}')
-            # with conflag_lock:
-            #     new_connection = True
-            # ip, port = client.getpeername()
-            # self.database.client_entry(data[NICKNAME], ip)
-            # send_message(client, {RESPONSE: 200})
-            # logs_server.info(f'Установлено соединения с клиентом "{data[NICKNAME]}", с адресом {ip}')
-            # self.clients.append(client)
-            # # return {RESPONSE: 200, NICKNAME: data[NICKNAME]}
 
         # Обработка сообщения клиента
         elif ACTION in data and data[ACTION] == MESSAGE:
@@ -193,6 +184,7 @@ class Server(Thread, metaclass=ServerVerifier):
             # return {RESPONSE: 400, ERROR: 'Bad Request'}
 
     def authorization(self, data, client):
+        """Метод авторизации клиентов"""
         global new_connection
         # Проверяем есть ли ткой пользователь
         if not self.database.check_client(data[NICKNAME]):
@@ -245,42 +237,19 @@ class Server(Thread, metaclass=ServerVerifier):
                 except OSError:
                     client.close()
 
-
-
-
-
     @staticmethod
     @log
     def create_message(client_from, text):
+        """Метод создания текстового сообщения от клиента для клиента"""
         return {
             ACTION: MESSAGE,
             NICKNAME: client_from,
             TEXT: text
         }
 
-    def show_history(self):
-        print('-------------------------История--------------------------------')
-        data = self.database.get_history()
-        if data:
-            for item in data:
-                print(f'Клиент: {item[0]}; с адресом ip: {item[1]}; вход: {item[2]}')
-        else:
-            print('Нет истории подключений')
-        print('----------------------------------------------------------------')
-
-    def show_active_client(self):
-        print('-------------------Пользователи онлайн--------------------------')
-        data = self.database.get_active_list()
-        if data:
-            for item in data:
-                print(f'Клиент: {item[0]}; с адресом ip: {item[1]}')
-        else:
-            print('Нет подключенных пользователей')
-        print('----------------------------------------------------------------')
-
 
 if __name__ == '__main__':
-
+    """Запуск сервера"""
     config = configparser.ConfigParser()
     path = os.path.dirname(os.path.realpath(__file__))
     config.read(f"{path}/{'server.ini'}")
@@ -358,6 +327,3 @@ if __name__ == '__main__':
     main_window.config_btn.triggered.connect(server_config)
 
     server_app.exec_()
-
-
-

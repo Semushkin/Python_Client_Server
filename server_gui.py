@@ -1,13 +1,15 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QAction, qApp, QLabel, QTableView, QApplication, QDialog, QPushButton, \
-    QLineEdit, QFileDialog, QMessageBox
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
 import sys
 from hashlib import pbkdf2_hmac
 from binascii import hexlify
 
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMainWindow, QAction, qApp, QLabel, QTableView, QApplication, QDialog, QPushButton, \
+    QLineEdit, QFileDialog, QMessageBox
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
+
 
 def create_connections_model(database):
+    """Метод создания модели """
     conn_list = database.get_active_list()
     model = QStandardItemModel()
     model.setHorizontalHeaderLabels(['Клиент', 'IP адрес'])
@@ -303,6 +305,5 @@ class AddClient(QDialog):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    # main = MainWindow()
-    add_client = AddClient()
+    main = MainWindow()
     app.exec_()

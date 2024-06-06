@@ -1,26 +1,27 @@
 import hmac
-import json
 import os.path
 import sys
 import logging
 import argparse
 import time
-from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
-from common.variables import *
-from common.utils import send_message, receive_message
-# import logs.client_log_config
-from logs.decor import log
 import inspect
+from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Thread, Lock
-from metaclasses import ClientVerifier
-from database_client import DataBase
-from errors import ServerError
-from PyQt5.QtWidgets import QApplication, QMessageBox
-from PyQt5.QtCore import pyqtSignal, QObject
-from client_gui import MainWindow, EnterWindow
-from Cryptodome.PublicKey import RSA
 from hashlib import pbkdf2_hmac
 from binascii import hexlify, b2a_base64
+
+from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtCore import pyqtSignal, QObject
+from Cryptodome.PublicKey import RSA
+
+from common.variables import (ACTION, PRESENCE, NICKNAME, PUBLIC_KEY, RESPONSE, ERROR, DATA, MESSAGE, TEXT, EXIT,
+                              GET_CONTACT, ADD_CONTACT, DEL_CONTACT, TO, TIME, CONTACT_NAME, CONTACTS, DEFAULT_PORT,
+                              DEFAULT_IP)
+from common.utils import send_message, receive_message
+from logs.decor import log
+from database_client import DataBase
+from errors import ServerError
+from client_gui import MainWindow, EnterWindow
 
 
 logs_client = logging.getLogger('app.client')
@@ -48,7 +49,6 @@ class Client(Thread, QObject):
         self.connection()
         self.database_refresh()
         self.close_program = False
-        # super().__init__()
 
     def connection(self):
         self.connect = socket(AF_INET, SOCK_STREAM)
@@ -60,11 +60,6 @@ class Client(Thread, QObject):
             print(f'Параметры запуска: ip = {self.ip}, port = {self.port}, nikname = {self.nickname}')
             self.connect.connect((self.ip, self.port))
 
-
-
-            # message_out = self.create_message(PRESENCE, self.nickname)
-            # send_message(connect, message_out)
-            # logs_client.info(f'{MOD} - отправлено собщение серверу в функции "{inspect.stack()[0][3]}"')
         except:
             logs_client.critical(f'{MOD} - Ошибка ссоединения с сервером!!!')
             raise ServerError('400: Ошибка ссоединения с сервером')
@@ -112,23 +107,6 @@ class Client(Thread, QObject):
                 raise ServerError(f'Ошибка авторизации. Некорректный ответ сервера')
         except OSError as err:
             raise ServerError(f'Ошибка авторизации : {err}')
-
-        # Получение подтверждения о подключении. Авторизация
-        # try:
-        #     answer = receive_message(self.connect)
-        #     if answer[RESPONSE] == 400:
-        #         print(f'{answer[RESPONSE]}: Ошибка ссоединения с сервером')
-        #         exit(1)
-        #     print(f'{answer[RESPONSE]}. Установлено ссоединение с сервером')
-        #     print('----------------------------------------------')
-        #     logs_client.info(f'{MOD} - получен ответ сервера в функции "{inspect.stack()[0][3]}"')
-        # except (ValueError, json.JSONDecodeError):
-        #     logs_client.error(f'{MOD} - не верный формат полученного сообщения в функции - "{inspect.stack()[0][3]}"')
-        #     exit(1)
-        # except ServerError as err:
-        #     print(err.text)
-        # # else:
-        # #     return connect
 
     def authorization(self):
         password_bytes = self.password.encode('utf-8')
@@ -289,8 +267,6 @@ if __name__ == '__main__':
     password = nick_app.password
     ip = DEFAULT_IP
     port = DEFAULT_PORT
-    # ip = nick_app.address
-    # port = nick_app.port
     if not nickname or not password:
         exit(1)
     else:
@@ -307,10 +283,6 @@ if __name__ == '__main__':
         with open(key_file, 'rb') as key:
             keys = RSA.import_key(key.read())
 
-    # if not ip:
-    #     ip = DEFAULT_IP
-    # if not port:
-    #     port = DEFAULT_PORT
     try:
         database = DataBase(nickname)
         client = Client(nickname, password, keys, ip, port, database)
