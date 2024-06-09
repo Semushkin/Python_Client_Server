@@ -114,9 +114,7 @@ class Server(Thread, metaclass=ServerVerifier):
                                 print(f'Клиент {client} отключился')
                                 del self.clients_name[client]
                                 break
-                        # self.database.client_exit(data[NICKNAME])
                         self.clients.remove(client_m)
-                        # del self.clients_name[data[NICKNAME]]
                         with conflag_lock:
                             new_connection = True
             # Отправка сообщений
@@ -165,7 +163,6 @@ class Server(Thread, metaclass=ServerVerifier):
 
         elif ACTION in data and data[ACTION] == GET_CONTACT:
             send_message(client, {RESPONSE: 202, CONTACTS: self.database.get_contacts(data[NICKNAME])})
-            # return {RESPONSE: 202, 'alert': self.database.get_contacts(data[NICKNAME])}
             return data
 
         elif ACTION in data and data[ACTION] == ADD_CONTACT:
@@ -183,7 +180,6 @@ class Server(Thread, metaclass=ServerVerifier):
         else:
             logs_server.warning(f'{MOD} - клиенту отправлен код 400 в функции - "{inspect.stack()[0][3]}"')
             send_message(client, {RESPONSE: 400, ERROR: 'Bad Request'})
-            # return {RESPONSE: 400, ERROR: 'Bad Request'}
 
     def authorization(self, data, client):
         """Метод авторизации клиентов"""
