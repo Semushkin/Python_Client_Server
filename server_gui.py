@@ -26,7 +26,7 @@ def create_connections_model(database):
 def create_stat_model(database):
     history_list = database.get_history()
     model = QStandardItemModel()
-    model.setHorizontalHeaderLabels(['Клиент','IP адрес', 'Дата входа'])
+    model.setHorizontalHeaderLabels(['Клиент', 'IP адрес', 'Дата входа'])
     for row in history_list:
         client, date, ip = row
         client = QStandardItem(client)
@@ -194,7 +194,7 @@ class ConfigWindow(QDialog):
             global dialog
             dialog = QFileDialog(self)
             path = dialog.getExistingDirectory()
-            #path = path.replace('/', '\\')
+            # path = path.replace('/', '\\')
             self.db_path.insert(path)
 
         self.db_path_select.clicked.connect(open_file_dialog)
@@ -205,7 +205,7 @@ class ConfigWindow(QDialog):
 
         self.db_file = QLineEdit(self)
         self.db_file.move(200, 66)
-        self.db_file.setFixedSize(150 , 20)
+        self.db_file.setFixedSize(150, 20)
 
         self.port_label = QLabel('Номер порта для соединений:', self)
         self.port_label.move(10, 108)
@@ -227,8 +227,8 @@ class ConfigWindow(QDialog):
         self.ip.move(200, 148)
         self.ip.setFixedSize(150, 20)
 
-        self.save_btn = QPushButton('Сохранить' , self)
-        self.save_btn.move(190 , 220)
+        self.save_btn = QPushButton('Сохранить', self)
+        self.save_btn.move(190, 220)
 
         self.close_button = QPushButton('Закрыть', self)
         self.close_button.move(275, 220)

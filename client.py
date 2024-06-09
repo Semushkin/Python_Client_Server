@@ -14,9 +14,10 @@ from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import pyqtSignal, QObject
 from Cryptodome.PublicKey import RSA
 
-from common.variables import (ACTION, PRESENCE, NICKNAME, PUBLIC_KEY, RESPONSE, ERROR, DATA, MESSAGE, TEXT, EXIT,
-                              GET_CONTACT, ADD_CONTACT, DEL_CONTACT, TO, TIME, CONTACT_NAME, CONTACTS, DEFAULT_PORT,
-                              DEFAULT_IP)
+from common.variables import (ACTION, PRESENCE, NICKNAME, PUBLIC_KEY, RESPONSE,
+                              ERROR, DATA, MESSAGE, TEXT, EXIT, GET_CONTACT,
+                              ADD_CONTACT, DEL_CONTACT, TO, TIME, CONTACT_NAME,
+                              CONTACTS, DEFAULT_PORT, DEFAULT_IP)
 from common.utils import send_message, receive_message
 from logs.decor import log
 from database_client import DataBase
@@ -55,13 +56,14 @@ class Client(Thread, QObject):
         self.connect.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.connect.settimeout(5)
 
-        #Подключение к серверу
+        # Подключение к серверу
         try:
-            print(f'Параметры запуска: ip = {self.ip}, port = {self.port}, nikname = {self.nickname}')
+            print(f'Параметры запуска: ip = {self.ip}, port = {self.port}, '
+                  f'nikname = {self.nickname}')
             self.connect.connect((self.ip, self.port))
 
-        except:
-            logs_client.critical(f'{MOD} - Ошибка ссоединения с сервером!!!')
+        except OSError as err:
+            logs_client.critical(f'{MOD} - Ошибка ссоединения с сервером!!! {err}')
             raise ServerError('400: Ошибка ссоединения с сервером')
 
         password_bytes = self.password.encode('utf-8')
@@ -82,7 +84,7 @@ class Client(Thread, QObject):
             answer = receive_message(self.connect)
 
             if RESPONSE in answer:
-                if answer[RESPONSE] == 400 :
+                if answer[RESPONSE] == 400:
                     raise ServerError(f'Ошибка авторизации : {answer[ERROR]}')
                 elif answer[RESPONSE] == 511:
                     data = answer[DATA]
@@ -104,7 +106,7 @@ class Client(Thread, QObject):
                         raise ServerError(f'Ошибка авторизации : {answer[ERROR]}')
 
             else:
-                raise ServerError(f'Ошибка авторизации. Некорректный ответ сервера')
+                raise ServerError('Ошибка авторизации. Некорректный ответ сервера')
         except OSError as err:
             raise ServerError(f'Ошибка авторизации : {err}')
 
@@ -126,7 +128,7 @@ class Client(Thread, QObject):
             answer = receive_message(self.connect)
 
             if RESPONSE in answer:
-                if answer[RESPONSE] == 400 :
+                if answer[RESPONSE] == 400:
                     raise ServerError(f'Ошибка авторизации : {answer[ERROR]}')
                 elif answer[RESPONSE] == 511:
                     data = answer[DATA]
@@ -143,7 +145,7 @@ class Client(Thread, QObject):
                     }
                     send_message(self.connect, message_out)
             else:
-                raise ServerError(f'Ошибка авторизации. Некорректный ответ сервера')
+                raise ServerError('Ошибка авторизации. Некорректный ответ сервера')
         except OSError as err:
             raise ServerError(f'Ошибка авторизации : {err}')
 
@@ -297,5 +299,3 @@ if __name__ == '__main__':
     else:
         main_window = MainWindow(database, client)
         app.exec_()
-
-

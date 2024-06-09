@@ -14,13 +14,15 @@ from os import urandom
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import QTimer
 
-from common.variables import (DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE, ERROR, ACTION,
-                              MESSAGE, NICKNAME, TEXT, TO, EXIT, GET_CONTACT, ADD_CONTACT, DEL_CONTACT,
+from common.variables import (DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE,
+                              ERROR, ACTION, MESSAGE, NICKNAME, TEXT, TO,
+                              EXIT, GET_CONTACT, ADD_CONTACT, DEL_CONTACT,
                               CONTACTS, CONTACT_NAME, DATA, ACCESS)
 from common.utils import receive_message, send_message
 from logs.decor import log, login_required
 # import logs.server_log_config
-from server_gui import (MainWindow, HistoryWindow, ConfigWindow, create_stat_model, create_connections_model,
+from server_gui import (MainWindow, HistoryWindow, ConfigWindow,
+                        create_stat_model, create_connections_model,
                         ClientsWindow, create_clients_list)
 from metaclasses import ServerVerifier
 from descriptrs import Port
@@ -78,7 +80,7 @@ class Server(Thread, metaclass=ServerVerifier):
                 data = self.validation(data, client)
             receive_data_lst = []
             send_data_lst = []
-            errors_lst =[]
+            errors_lst = []
             try:
                 if self.clients:
                     receive_data_lst, send_data_lst, errors_lst = select.select(self.clients, self.clients, [], 0)
@@ -119,7 +121,7 @@ class Server(Thread, metaclass=ServerVerifier):
                             new_connection = True
             # Отправка сообщений
             for message in self.messages:
-                if message[2] not in self.clients_name.keys(): # Проверяем, есть ли пользователь с таким Именем
+                if message[2] not in self.clients_name.keys():  # Проверяем, есть ли пользователь с таким Именем
                     continue
                 message_to_send = self.create_message(message[0], message[1])
                 try:
@@ -280,7 +282,6 @@ if __name__ == '__main__':
         clients_list.client_table.resizeColumnsToContents()
         clients_list.client_table.resizeRowsToContents()
 
-
     def show_statistics():
         global stat_window
         stat_window = HistoryWindow()
@@ -296,7 +297,6 @@ if __name__ == '__main__':
         config_window.port.insert(config['SETTINGS']['Default_port'])
         config_window.ip.insert(config['SETTINGS']['Listen_Address'])
         config_window.save_btn.clicked.connect(save_server_config)
-
 
     def save_server_config():
         global config_window

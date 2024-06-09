@@ -4,7 +4,6 @@ import dis
 class ClientVerifier(type):
     """Метакласс клиента, проверяющий отсутсвие недопучтимых методов (listen, accept, socket)"""
     def __init__(cls, class_name, class_parents, class_attrs):
-        sock = False
         for attr in class_attrs:
             try:
                 ret = dis.get_instructions(class_attrs[attr])
@@ -24,7 +23,6 @@ class ClientVerifier(type):
 class ServerVerifier(type):
     """Метакласс сервера, проверяющий отсутсвие недопумтимого метода connect"""
     def __init__(cls, class_name, class_parents, class_attrs):
-        sock = False
         for attr in class_attrs:
             try:
                 ret = dis.get_instructions(class_attrs[attr])

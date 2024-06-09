@@ -1,5 +1,7 @@
-from PyQt5.QtWidgets import (QMainWindow, QApplication, QLabel, QListView, QTextEdit, QPushButton, QDialog, QLineEdit,
-                             QMessageBox, QTableView)
+from PyQt5.QtWidgets import (QMainWindow, QApplication, QLabel,
+                             QListView, QTextEdit, QPushButton,
+                             QDialog, QLineEdit, QMessageBox,
+                             QTableView)
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
 from PyQt5.QtCore import Qt, pyqtSlot
 import sys
@@ -8,15 +10,15 @@ import sys
 class MainWindow(QMainWindow):
 
     def __init__(self, database, client):
-         super().__init__()
-         self.database = database
-         self.client = client
-         self.initUI()
-         self.load_contacts()
-         self.connect_signals()
-         self.message_window = QMessageBox()
-         self.active_chat = None
-         self.show()
+        super().__init__()
+        self.database = database
+        self.client = client
+        self.initUI()
+        self.load_contacts()
+        self.connect_signals()
+        self.message_window = QMessageBox()
+        self.active_chat = None
+        self.show()
 
     def initUI(self):
         self.setFixedSize(900, 700)
@@ -99,11 +101,11 @@ class MainWindow(QMainWindow):
         contact = self.contact_table.currentIndex().data()
         if contact:
             if self.message_window.question(self,
-                                         'Удаление контакта',
-                                         f'Удалить контакт "{contact}" ?',
-                                         QMessageBox.Yes,
-                                         QMessageBox.No
-                                         ) == QMessageBox.Yes:
+                                            'Удаление контакта',
+                                            f'Удалить контакт "{contact}" ?',
+                                            QMessageBox.Yes,
+                                            QMessageBox.No
+                                            ) == QMessageBox.Yes:
                 self.client.delete_contact(contact)
                 self.load_contacts()
 
@@ -122,7 +124,9 @@ class MainWindow(QMainWindow):
         messages = self.database.get_history_messages_by_contact(self.active_chat)
         history_messages_model = QStandardItemModel()
         for message in messages:
-            item = QStandardItem(f'from {message.sender}, to {message.recipient}, date {message.date}\n {message.message}')
+            item = QStandardItem(f'from {message.sender}, '
+                                 f'to {message.recipient}, '
+                                 f'date {message.date}\n {message.message}')
             if message.sender == self.client.nickname:
                 item.setTextAlignment(Qt.AlignRight)
             item.setEditable(False)
@@ -224,7 +228,7 @@ class NewContact(QDialog):
         self.setWindowTitle('New Contact')
 
         self.label_nickname = QLabel('Nickname', self)
-        self.label_nickname.setGeometry(20, 50 ,70, 20)
+        self.label_nickname.setGeometry(20, 50, 70, 20)
 
         self.edit_nickname = QLineEdit(self)
         self.edit_nickname.setGeometry(100, 50, 120, 25)

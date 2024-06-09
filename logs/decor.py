@@ -23,8 +23,7 @@ def main():
 import logging
 import inspect
 from socket import socket
-#import client_log_config
-from pprint import pprint
+# import client_log_config
 
 CLIENT_M = 'client.py'
 SERVER_M = 'server.py'
@@ -58,4 +57,3 @@ def login_required(func):
                 args[1][ACCESS] = True
         return func(*args, **kwargs)
     return wrapper
-

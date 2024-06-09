@@ -12,8 +12,11 @@ PATH = os.path.join(PATH, 'app.server.log')
 logs = logging.getLogger('app.server')
 
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-#file_hand = logging.FileHandler(f"{PATH}/app.client.log", encoding='utf-8')
-file_hand = logging.handlers.TimedRotatingFileHandler(PATH, encoding='utf8', interval=1, when='midnight')
+# file_hand = logging.FileHandler(f"{PATH}/app.client.log", encoding='utf-8')
+file_hand = logging.handlers.TimedRotatingFileHandler(PATH,
+                                                      encoding='utf8',
+                                                      interval=1,
+                                                      when='midnight')
 file_hand.setFormatter(formatter)
 
 logs.addHandler(file_hand)
