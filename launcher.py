@@ -24,19 +24,22 @@ def launch():
                         'exit - Выйти\n')
 
         if request == 'start':
-            if platform.system().lower() == 'windows':
-                PROCESS.append(subprocess.Popen('python server.py', creationflags=subprocess.CREATE_NEW_CONSOLE))
-                PROCESS.append(subprocess.Popen('python client.py -s send', creationflags=subprocess.CREATE_NEW_CONSOLE))
-                PROCESS.append(subprocess.Popen('python client.py', creationflags=subprocess.CREATE_NEW_CONSOLE))
-                PROCESS.append(subprocess.Popen('python client.py', creationflags=subprocess.CREATE_NEW_CONSOLE))
-            else:
-                PROCESS.append(process('server.py'))
-                sleep(0.5)
-                PROCESS.append(process('client.py -s send -n John'))
-                sleep(0.5)
-                PROCESS.append(process('client.py -n Sam'))
-                sleep(0.5)
-                PROCESS.append(process('client.py -n Robert'))
+            try:
+                if platform.system().lower() == 'windows':
+                    PROCESS.append(subprocess.Popen('python server.py', creationflags=subprocess.CREATE_NEW_CONSOLE))
+                    PROCESS.append(subprocess.Popen('python client.py -n Test_1 -pas 123456', creationflags=subprocess.CREATE_NEW_CONSOLE))
+                    PROCESS.append(subprocess.Popen('python client.py -n Test_2 -pas 123456', creationflags=subprocess.CREATE_NEW_CONSOLE))
+                    PROCESS.append(subprocess.Popen('python client.py -n Test_3 -pas 123456', creationflags=subprocess.CREATE_NEW_CONSOLE))
+                else:
+                    PROCESS.append(process('server.py'))
+                    sleep(0.5)
+                    PROCESS.append(process('client.py -n Test_1 -pas 123456'))
+                    sleep(0.5)
+                    PROCESS.append(process('client.py -n Test_2 -pas 123456'))
+                    sleep(0.5)
+                    PROCESS.append(process('client.py -n Test_3 -pas 123456'))
+            except Exception as err:
+                exit(1)
         if request == 'stop':
             while PROCESS:
                 proc = PROCESS.pop()

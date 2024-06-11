@@ -248,31 +248,37 @@ def arg_data():
     parse = argparse.ArgumentParser()
     parse.add_argument('-i', default=DEFAULT_IP, help='IP adress', nargs='?')
     parse.add_argument('-p', default=DEFAULT_PORT, help='PORT', type=int, nargs='?')
-    parse.add_argument('-s', default='listen', help='status: "listen" or "send"', nargs='?')
+    # parse.add_argument('-s', default='listen', help='status: "listen" or "send"', nargs='?')
     parse.add_argument('-n', help='nickname', nargs='?')
+    parse.add_argument('-pas', help='password', default='', nargs='?')
     namespace = parse.parse_args(sys.argv[1:])
     ip = namespace.i
     port = namespace.p
-    status = namespace.s
-    if status != 'listen' and status != 'send':
-        status = 'listen'
     nickname = namespace.n
-    return ip, port, status, nickname
+    password = namespace.pas
+    # status = namespace.s
+    # if status != 'listen' and status != 'send':
+    #     status = 'listen'
+    return ip, port, nickname, password
 
 
 if __name__ == '__main__':
-
+    #  Запускаем главное приложение
     app = QApplication(sys.argv)
-    nick_app = EnterWindow()
-    app.exec_()
-    nickname = nick_app.nickname
-    password = nick_app.password
-    ip = DEFAULT_IP
-    port = DEFAULT_PORT
+
+    ip, port, nickname, password = arg_data()
+
     if not nickname or not password:
-        exit(1)
-    else:
-        print(f'data = {nickname}, {password}')
+        nick_app = EnterWindow()
+        app.exec_()
+        nickname = nick_app.nickname
+        password = nick_app.password
+        ip = DEFAULT_IP
+        port = DEFAULT_PORT
+    # if not nickname or not password:
+    #     exit(1)
+    # else:
+    #     print(f'data = {nickname}, {password}')
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
     key_file = os.path.join(dir_path, f'{nickname}')

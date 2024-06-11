@@ -25,6 +25,8 @@ class ServerVerifier(type):
     def __init__(cls, class_name, class_parents, class_attrs):
         for attr in class_attrs:
             try:
+                if attr == '__doc__':
+                    continue
                 ret = dis.get_instructions(class_attrs[attr])
             except TypeError:
                 pass
