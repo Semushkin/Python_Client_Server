@@ -5,12 +5,12 @@ import os
 
 sys.path.append('../')
 PATH = os.path.dirname(os.path.abspath(__file__))
-PATH = os.path.join(PATH, 'reports')
+PATH = os.path.join(PATH, 'app.client.log')
 
 logs = logging.getLogger('app.client')
 
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-file_hand = logging.FileHandler(f"{PATH}/app.client.log", encoding='utf-8')
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s - %(message)s")
+file_hand = logging.FileHandler(PATH, encoding='utf-8')
 file_hand.setFormatter(formatter)
 
 logs.addHandler(file_hand)

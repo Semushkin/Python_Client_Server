@@ -43,7 +43,6 @@ class Client(Thread, QObject):
         self.keys = keys
         self.ip = ip
         self.port = port
-        print(f'Параметры подключения {self.nickname}, {self.ip}, {self.port}')
         self.connect = None
         self.database = database
         # self.connect = self.connection()
@@ -61,9 +60,10 @@ class Client(Thread, QObject):
             print(f'Параметры запуска: ip = {self.ip}, port = {self.port}, '
                   f'nikname = {self.nickname}')
             self.connect.connect((self.ip, self.port))
+            logs_client.info(f'Подключился клиент {self.nickname}')
 
         except OSError as err:
-            logs_client.critical(f'{MOD} - Ошибка ссоединения с сервером!!! {err}')
+            logs_client.critical(f'Ошибка ссоединения с сервером!!! {err}')
             raise ServerError('400: Ошибка ссоединения с сервером')
 
         password_bytes = self.password.encode('utf-8')
@@ -200,7 +200,7 @@ class Client(Thread, QObject):
             elif data[RESPONSE] == 202:
                 return f'{data[RESPONSE]}: Добавлен новый контакт'
             else:
-                logs_client.warning(f'{MOD} - сервер прслал код 400 в функции - "{inspect.stack()[0][3]}"')
+                logs_client.warning(f'Cервер прислал код 400 в функции - "{inspect.stack()[0][3]}"')
                 # return f'400: {data[ERROR]}'
                 raise ServerError(f'Ошибка ссоединения с сервером! {data[ERROR]}')
         elif ACTION in data and data[ACTION] == MESSAGE:
@@ -210,7 +210,7 @@ class Client(Thread, QObject):
             self.database.save_history_messages(data[NICKNAME], self.nickname, data[TEXT])
             self.signal_new_message.emit(data[NICKNAME])
             return f'\nПолучено сообщение от {data[NICKNAME]}: {data[TEXT]}'
-        raise logs_client.error(f'{MOD} - Ошибка валидации ответа сервера в функции - {inspect.stack()[0][3]}')
+        raise logs_client.error(f'Ошибка валидации ответа сервера в функции - {inspect.stack()[0][3]}')
 
     def add_contact(self, new_contact):
         with thread_lock:
