@@ -18,9 +18,18 @@ def launch():
         return subprocess.Popen(args, preexec_fn=os.setpgrp)
 
     def stop_process():
-        pass
+        while process:
+            # proc = PROCESS.pop()
+            # os.killpg(proc.pid, signal.SIGINT)
+            process.pop().kill()
 
-    os.system('cls')
+    def clear_terminal():
+        if platform.system().lower() == "windows":
+            os.system('cls')
+        else:
+            os.system('clear')
+
+    clear_terminal()
     while True:
         request = input('Введите команду:\n'
                         'start - запустить сервер и клиента\n'
@@ -46,13 +55,15 @@ def launch():
                 sleep(0.5)
                 process.append(linux_process('client.py -n Test_3 -pas 123456'))
         if request == 'stop':
-            while process:
-                # proc = PROCESS.pop()
-                # os.killpg(proc.pid, signal.SIGINT)
-                process.pop().kill()
+            # while process:
+            #     # proc = PROCESS.pop()
+            #     # os.killpg(proc.pid, signal.SIGINT)
+            #     process.pop().kill()
+            stop_process()
         if request == 'exit':
+            stop_process()
             break
-        os.system('cls')
+        clear_terminal()
 
 
 if __name__ == '__main__':
