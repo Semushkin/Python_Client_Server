@@ -18,10 +18,13 @@ def launch():
         return subprocess.Popen(args, preexec_fn=os.setpgrp)
 
     def stop_process():
-        while process:
-            # proc = PROCESS.pop()
-            # os.killpg(proc.pid, signal.SIGINT)
-            process.pop().kill()
+        if platform.system().lower() == "windows":
+            while process:
+                process.pop().kill()
+        else:
+            while process:
+                proc = process.pop()
+                os.killpg(proc.pid, signal.SIGINT)
 
     def clear_terminal():
         if platform.system().lower() == "windows":
