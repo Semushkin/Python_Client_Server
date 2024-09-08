@@ -56,7 +56,7 @@ def launch():
                 sleep(0.5)
                 process.append(linux_process('client.py -n Test_2 -pas 123456'))
                 sleep(0.5)
-                process.append(linux_process('client.py -n Test_3 -pas 123456'))
+                process.append(linux_process('clientexit.py -n Test_3 -pas 123456'))
         if request == 'stop':
             # while process:
             #     # proc = PROCESS.pop()

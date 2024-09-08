@@ -21,14 +21,14 @@ from common.variables import (DEFAULT_PORT, DEFAULT_IP, PRESENCE, RESPONSE,
 from common.utils import receive_message, send_message
 from logs.decor import log, login_required
 # import logs.server_log_config
-from server_gui import (MainWindow, HistoryWindow, ConfigWindow,
-                        create_stat_model, create_connections_model,
-                        ClientsWindow, create_clients_list)
-from metaclasses import ServerVerifier
-from descriptrs import Port
-from database_server import DataBase
+from serverapp.server_gui import (MainWindow, HistoryWindow, ConfigWindow,
+                                  create_stat_model, create_connections_model,
+                                  ClientsWindow, create_clients_list)
+from common.metaclasses import ServerVerifier
+from common.descriptrs import Port
+from serverapp.database_server import DataBase
 
-logs_server = logging.getLogger('app.server')
+logs_server = logging.getLogger('app.serverapp')
 MOD = inspect.stack()[0][1].split("/")[-1]
 
 new_connection = False
@@ -250,7 +250,7 @@ if __name__ == '__main__':
     """Запуск сервера"""
     config = configparser.ConfigParser()
     path = os.path.dirname(os.path.realpath(__file__))
-    config.read(f"{path}/{'server.ini'}")
+    config.read(f"{path}/{'serverapp.ini'}")
     database = DataBase()
 
     ip, port = arg_data()

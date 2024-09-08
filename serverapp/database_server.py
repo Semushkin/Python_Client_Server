@@ -8,9 +8,11 @@ from common.variables import DATABASE_SERVER
 
 
 class DataBase:
+    """Класс работы с базой данных на стороне Сервера на базе SQLite3 и SQLAlchemy"""
     Base = declarative_base()
 
     class Clients(Base):
+        """Класс отображения Клиентов"""
         __tablename__ = 'Clients'
         id = Column(Integer, primary_key=True)
         nickname = Column(String, unique=True)
@@ -25,6 +27,7 @@ class DataBase:
             return self.nickname
 
     class History(Base):
+        """Класс отображения истории подлючавшихся Клиентов"""
         __tablename__ = 'History'
         id = Column(Integer, primary_key=True)
         client_id = Column(String, ForeignKey('Clients.id'))
@@ -40,6 +43,7 @@ class DataBase:
             return f'Клиент {self.client_id}, ip {self.ip}, последний вход {self.date_entry}'
 
     class ActiveClients(Base):
+        """Класс отображения активных(подключенных) Клиентов"""
         __tablename__ = 'ActiveClients'
         id = Column(Integer, primary_key=True)
         client_id = Column(String, ForeignKey('Clients.id'), unique=True)
@@ -53,6 +57,7 @@ class DataBase:
             return f'Клиент {self.client_id}, ip {self.ip}'
 
     class Contacts(Base):
+        """Класс отображения контактов Клиента"""
         __tablename__ = 'Contacts'
         id = Column(Integer, primary_key=True)
         client_id = Column(String, ForeignKey('Clients.id'))
@@ -77,19 +82,22 @@ class DataBase:
         self.session.commit()
 
     def get_client_by_name(self, nickname):
+        """Метод получения клиента по имени"""
         return self.session.query(self.Clients).filter_by(nickname=nickname).first()
 
     def add_client(self, nickname, passwd):
+        """Метод добавления нового клиента"""
         client = self.Clients(nickname, passwd)
         self.session.add(client)
         self.session.commit()
 
     def delete_client(self, nickname):
+        """Метод удаления клиента"""
         self.session.query(self.Clients).filter_by(nickname=nickname).delete()
         self.session.commit()
 
     def client_entry(self, nickname, ip):
-
+        """Метод добавления клиента в список активных(подключившехся) клиентов и добавление записи в историю входов"""
         client = self.session.query(self.Clients).filter_by(nickname=nickname).first()
 
         active = self.ActiveClients(client.id, ip)
@@ -99,25 +107,29 @@ class DataBase:
         self.session.commit()
 
     def client_exit(self, nickname):
+        """Метод удаления клиента из списка активных пользователей"""
         client = self.session.query(self.Clients).filter_by(nickname=nickname).first()
         self.session.query(self.ActiveClients).filter_by(client_id=client.id).delete()
         self.session.commit()
 
     def get_active_list(self):
+        """Метод получения списка активных пользователей"""
         result = self.session.query(self.Clients.nickname, self.ActiveClients.ip).join(self.Clients)
         return result.all()
 
     def get_history(self):
+        """Метод получения истории подключений клиентов"""
         result = self.session.query(self.Clients.nickname, self.History.ip, self.History.date_entry).join(self.Clients)
         return result.all()
 
     def get_contacts(self, nickname):
+        """Метод получения списка контактов пользователя"""
         client = self.session.query(self.Clients).filter_by(nickname=nickname).first()
-
         query = self.session.query(self.Contacts, self.Clients.nickname).filter_by(client_id=client.id).join(self.Clients, self.Contacts.contact_id == self.Clients.id)
         return [item[1] for item in query.all()]
 
     def add_contact(self, client_name, contact):
+        """Метод добавления нового контакта клиента"""
         client = self.session.query(self.Clients).filter_by(nickname=client_name).first()
         contact = self.session.query(self.Clients).filter_by(nickname=contact).first()
 
@@ -133,6 +145,7 @@ class DataBase:
         return True
 
     def delete_contact(self, client_name, contact):
+        """Метод уаления контакта из списка контактов клиента"""
         client = self.session.query(self.Clients).filter_by(nickname=client_name).first()
         contact = self.session.query(self.Clients).filter_by(nickname=contact).first()
 
@@ -146,12 +159,15 @@ class DataBase:
         return True
 
     def get_all_client(self):
+        """Метод получения списка всех известных клиентов"""
         return [client[0] for client in self.session.query(self.Clients.nickname).all()]
 
     def get_all_contacts(self):
+        """Метод получения списка всех контаков"""
         return self.session.query(self.Contacts).join(self.Clients)
 
     def check_client(self, nickname):
+        """Метод проверки наличия клиента с списке зарегистрированных"""
         if self.session.query(self.Clients).filter_by(nickname=nickname).count():
             return True
         return False

@@ -1,5 +1,5 @@
 import unittest
-from server import validation
+from serverapp import validation
 from common.variables import ACTION, PRESENCE, RESPONSE, ERROR, ANSWER
 
 

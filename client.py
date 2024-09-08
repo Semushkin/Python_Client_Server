@@ -20,12 +20,12 @@ from common.variables import (ACTION, PRESENCE, NICKNAME, PUBLIC_KEY, RESPONSE,
                               CONTACTS, DEFAULT_PORT, DEFAULT_IP)
 from common.utils import send_message, receive_message
 from logs.decor import log
-from database_client import DataBase
-from errors import ServerError
-from client_gui import MainWindow, EnterWindow
+from clientapp.database_client import DataBase
+from common.errors import ServerError
+from clientapp.client_gui import MainWindow, EnterWindow
 
 
-logs_client = logging.getLogger('app.client')
+logs_client = logging.getLogger('app.clientapp')
 MOD = inspect.stack()[0][1].split("/")[-1]
 thread_lock = Lock()
 

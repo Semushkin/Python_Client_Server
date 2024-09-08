@@ -7,12 +7,12 @@ import logging.handlers
 sys.path.append('../')
 PATH = os.path.dirname(os.path.abspath(__file__))
 PATH = os.path.join(PATH, 'reports')
-PATH = os.path.join(PATH, 'app.server.log')
+PATH = os.path.join(PATH, 'app.serverapp.log')
 
-logs = logging.getLogger('app.server')
+logs = logging.getLogger('app.serverapp')
 
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-# file_hand = logging.FileHandler(f"{PATH}/app.client.log", encoding='utf-8')
+# file_hand = logging.FileHandler(f"{PATH}/app.clientapp.log", encoding='utf-8')
 file_hand = logging.handlers.TimedRotatingFileHandler(PATH,
                                                       encoding='utf8',
                                                       interval=1,

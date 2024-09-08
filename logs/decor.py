@@ -4,12 +4,12 @@ from socket import socket
 # import client_log_config
 import logs.client_log_config
 
-CLIENT_M = 'client.py'
-SERVER_M = 'server.py'
+CLIENT_M = 'clientapp.py'
+SERVER_M = 'serverapp.py'
 
 
-logs_client = logging.getLogger('app.client')
-logs_server = logging.getLogger('app.server')
+logs_client = logging.getLogger('app.clientapp')
+logs_server = logging.getLogger('app.serverapp')
 
 
 def log(func):

@@ -1,6 +1,6 @@
 
 import unittest
-from client import validation, create_message
+from clientapp import validation, create_message
 from common.variables import PRESENCE, ANSWER, RESPONSE, ERROR, TEXT, ACTION
 
 

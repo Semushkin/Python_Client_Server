@@ -9,7 +9,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 
 
 def create_connections_model(database):
-    """Метод создания модели """
+    """Метод создания GUI модели таблицы подключившехся клиентов"""
     conn_list = database.get_active_list()
     model = QStandardItemModel()
     model.setHorizontalHeaderLabels(['Клиент', 'IP адрес'])
@@ -24,6 +24,7 @@ def create_connections_model(database):
 
 
 def create_stat_model(database):
+    """Метод создания GUI модели таблицы истории подключений клиентов"""
     history_list = database.get_history()
     model = QStandardItemModel()
     model.setHorizontalHeaderLabels(['Клиент', 'IP адрес', 'Дата входа'])
@@ -40,6 +41,7 @@ def create_stat_model(database):
 
 
 def create_clients_list(database):
+    """Метод создания GUI модели таблицы всех клиентов"""
     clients = database.get_all_client()
     model = QStandardItemModel()
     model.setHorizontalHeaderLabels(['Клиент'])
@@ -51,7 +53,7 @@ def create_clients_list(database):
 
 
 class MainWindow(QMainWindow):
-
+    """Класс главного окна GUI приложения Сервера"""
     def __init__(self):
         super().__init__()
         self.initUI()
@@ -91,6 +93,7 @@ class MainWindow(QMainWindow):
 
 
 class HistoryWindow(QDialog):
+    """Класс окна отоброжения списка истории подключения клиентов"""
     def __init__(self):
         super().__init__()
         self.initUI()
