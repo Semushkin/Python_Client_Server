@@ -115,6 +115,7 @@ class HistoryWindow(QDialog):
 
 
 class ClientsWindow(QDialog):
+    """Класс отображения окна всех зарегестрированных клиентов, с возможностью их добавления и удаления."""
     def __init__(self, database):
         super().__init__()
         self.database = database
@@ -145,6 +146,7 @@ class ClientsWindow(QDialog):
         self.show()
 
     def add_client(self):
+        """Метод добавления нового ползователя"""
         global add_new_client
         add_new_client = AddClient(self.database)
         # add_new_client.show()
@@ -153,6 +155,7 @@ class ClientsWindow(QDialog):
         # self.message.information(self, 'rrrrrrrrrrrr rrrrrrrrrrrr', 'rrrrrrrrrrrr')
 
     def delete_client(self):
+        """Метод удаления ползователя"""
         client = self.client_table.currentIndex().data()
 
         if client:
@@ -167,12 +170,14 @@ class ClientsWindow(QDialog):
                 self.update_table()
 
     def update_table(self):
+        """Метод обновления в окне списка зарегистрированных пользователей, после операции добавления или удаления"""
         self.client_table.setModel(create_clients_list(self.database))
         self.client_table.resizeColumnsToContents()
         self.client_table.resizeRowsToContents()
 
 
 class ConfigWindow(QDialog):
+    """Класс окна настроек"""
     def __init__(self):
         super().__init__()
         self.initUI()
@@ -241,6 +246,7 @@ class ConfigWindow(QDialog):
 
 
 class AddClient(QDialog):
+    """Класс окна добавления нового пользовтеля"""
     def __init__(self, database):
         super().__init__()
         self.database = database
@@ -287,6 +293,7 @@ class AddClient(QDialog):
         self.show()
 
     def save(self):
+        """Метод сохранения данных нового пользователя, с предваретельной проверкой корректности указанных данных"""
         if not self.edit_nickname.text() or not self.edit_password_1.text() or not self.edit_password_2.text():
             self.message.critical(self, 'Ошибка!!!', 'Ошибка! Форма не заполнена')
             # self.close()

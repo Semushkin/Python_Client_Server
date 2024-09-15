@@ -13,6 +13,7 @@ logs_server = logging.getLogger('app.serverapp')
 
 
 def log(func):
+    """Декоратор. Производит логирования совершенных действий на стороне сервера и пользователя """
     def wrapper(*args, **kwargs):
         received_from = inspect.stack()[1][1].split("/")[-1]
         parent_func = str(inspect.stack()[1][0]).split(' ')[-1][:-1]
@@ -25,6 +26,7 @@ def log(func):
 
 
 def login_required(func):
+    """Декоратор. Проверяет, является ли пользователь авторизованным. """
     from common.variables import ACTION, PRESENCE, NICKNAME, ACCESS
 
     def wrapper(*args, **kwargs):

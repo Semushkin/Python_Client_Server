@@ -6,9 +6,12 @@ from sqlalchemy.orm import sessionmaker
 
 
 class DataBase:
+    """Класс работы с базой данных на стороне Пользователя на базе SQLite3 и SQLAlchemy"""
     Base = declarative_base()
+    """Ghfjkfg"""
 
     class Contacts(Base):
+        """Класс отображения Контактов Пользователя"""
         __tablename__ = 'Contacts'
         id = Column(Integer, primary_key=True)
         nickname = Column(String, unique=True)
@@ -21,6 +24,7 @@ class DataBase:
             return self.nickname
 
     class HistoryMessage(Base):
+        """Класс отображения истории переписки Пользователя"""
         __tablename__ = 'History'
         id = Column(Integer, primary_key=True)
         sender = Column(String)
@@ -52,50 +56,35 @@ class DataBase:
         self.session.commit()
 
     def get_contacts(self):
-        """
-        :return: list of contacts (nickname, nickname, ...)
-        """
+        """Метод получения контактов Пользователя"""
         return [[contact.nickname, contact.unreaded_messages] for contact in self.session.query(self.Contacts).all()]
 
     def check_contact(self, nickname: str):
-        """
-
-        :param nickname: nickname of contact
-        :return: None
-        """
+        """Метод проверки наличия пользователя в базе сервера"""
         if self.session.query(self.Contacts).filter_by(nickname=nickname).count():
             return True
         return False
 
     def add_contact(self, nickname: str) -> None:
+        """Метод добавления контакта пользователя в базу данных"""
         if not self.session.query(self.Contacts).filter_by(nickname=nickname).count():
             new_contact = self.Contacts(nickname)
             self.session.add(new_contact)
             self.session.commit()
 
     def delete_contact(self, contact):
+        """Метод удаления контакта пользователя из базы"""
         self.session.query(self.Contacts).filter_by(nickname=contact).delete()
         self.session.commit()
 
     def save_history_messages(self, sender: str, recipient: str, message: str) -> None:
-        """
-
-        :param sender:  nickname sender
-        :param recipient: nickname recipient
-        :param message:
-        :return: None
-        """
+        """Метод сохранения сообщения в истории переписок"""
         message = self.HistoryMessage(sender, recipient, message)
         self.session.add(message)
         self.session.commit()
 
     def get_history_messages_by_contact(self, contact) -> list:
-        """
-        get list of messages
-
-        :param contact: contact
-        :return: list
-        """
+        """Метод получения списка сообщений пользователя с определенным контактом"""
         messages = self.session.query(self.HistoryMessage).filter(or_(
             self.HistoryMessage.sender == contact,
             self.HistoryMessage.recipient == contact
@@ -103,22 +92,21 @@ class DataBase:
         return messages
 
     def new_message_set(self, nickname: str):
+        """Метод записи в базе о наличие нового не прочитанного сообщения от контакта пользователя"""
         contact = self.session.query(self.Contacts).filter_by(nickname=nickname).first()
         contact.unreaded_messages = True
         self.session.add(contact)
         self.session.commit()
 
     def new_message_clean(self, nickname: str):
+        """Метод снятия отметки о наличие нового не прочитанного сообщения от контакта пользователя"""
         contact = self.session.query(self.Contacts).filter_by(nickname=nickname).first()
         contact.unreaded_messages = False
         self.session.add(contact)
         self.session.commit()
 
     def check_new_messages(self, nickname: str):
-        """
-        :param nickname: str
-        :return: Return true if flag "new message" set
-        """
+        """Метод проверки наличия отметки о """
         contact = self.session.query(self.Contacts).filter_by(nickname=nickname).first()
         if contact.unreaded_messages:
             return True

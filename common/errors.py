@@ -1,4 +1,5 @@
 class ServerError(Exception):
+    """Класс обработки ошибок ссоединения с сервером на стороне пользователя"""
     def __init__(self, text):
         self.text = text
 

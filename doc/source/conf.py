@@ -6,6 +6,11 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import os
+import sys
+path = os.path.dirname(os.path.dirname(os.path.abspath('.')))
+sys.path.insert(0, path)
+
 project = 'Messanger'
 copyright = '2024, Semushkin Anton'
 author = 'Semushkin Anton'

@@ -31,6 +31,7 @@ thread_lock = Lock()
 
 
 class Client(Thread, QObject):
+    """Главный класс работы Мессенджера на стороне клиента"""
     signal_new_message = pyqtSignal(str)
     connection_lost = pyqtSignal()
     signal_new_contact = pyqtSignal(str)
@@ -110,46 +111,8 @@ class Client(Thread, QObject):
         except OSError as err:
             raise ServerError(f'Ошибка авторизации : {err}')
 
-    def authorization(self):
-        password_bytes = self.password.encode('utf-8')
-        salt = self.nickname.lower().encode('utf-8')
-        password_hash = pbkdf2_hmac('sha512', password_bytes, salt, 10000)
-        password_hash_string = hexlify(password_hash)
-        public_key = self.keys.publickey().export_key().decode('ascii')
-
-        message_out = {
-            ACTION: PRESENCE,
-            NICKNAME: nickname,
-            PUBLIC_KEY: public_key
-        }
-
-        try:
-            send_message(self.connect, message_out)
-            answer = receive_message(self.connect)
-
-            if RESPONSE in answer:
-                if answer[RESPONSE] == 400:
-                    raise ServerError(f'Ошибка авторизации : {answer[ERROR]}')
-                elif answer[RESPONSE] == 511:
-                    data = answer[DATA]
-                    hash = hmac.new(
-                        password_hash_string,
-                        data.encode('utf-8'),
-                        'MD5'
-                    )
-                    digest = hash.digest()
-                    message_out = {
-                        ACTION: PRESENCE,
-                        NICKNAME: nickname,
-                        DATA: b2a_base64(digest).decode('ascii')
-                    }
-                    send_message(self.connect, message_out)
-            else:
-                raise ServerError('Ошибка авторизации. Некорректный ответ сервера')
-        except OSError as err:
-            raise ServerError(f'Ошибка авторизации : {err}')
-
     def run(self):
+        """Метод непрерывной работы Приложения, пока его не закроют."""
         while not self.close_program:
             time.sleep(1)
             with thread_lock:
@@ -166,6 +129,7 @@ class Client(Thread, QObject):
     @staticmethod
     @log
     def create_message(action, nickname, text='', to='', contact=''):
+        """Метод создания сообщения"""
         if action == PRESENCE:
             return {ACTION: PRESENCE, NICKNAME: nickname}
         elif action == MESSAGE:
@@ -180,6 +144,7 @@ class Client(Thread, QObject):
             return {ACTION: DEL_CONTACT, CONTACT_NAME: contact, TIME: time.time(), NICKNAME: nickname}
 
     def database_refresh(self):
+        """Метод запроса актуального списка Контактов Пользователя. Используется при старте Приложения Пользователя"""
         get_contacts = self.create_message(GET_CONTACT, self.nickname)
         send_message(self.connect, get_contacts)
         answer = receive_message(self.connect)
@@ -192,6 +157,7 @@ class Client(Thread, QObject):
 
     @log
     def validation(self, data):
+        """Метод валидации полученного от сервера сообщения"""
         if RESPONSE in data:
             if data[RESPONSE] == 200:
                 return f'{data[RESPONSE]}: Выполнено!'
@@ -213,6 +179,7 @@ class Client(Thread, QObject):
         raise logs_client.error(f'Ошибка валидации ответа сервера в функции - {inspect.stack()[0][3]}')
 
     def add_contact(self, new_contact):
+        """Метод добавления нового Контакта Пользователя"""
         with thread_lock:
             message_out = self.create_message(ADD_CONTACT, self.nickname, contact=new_contact)
             send_message(self.connect, message_out)
@@ -225,6 +192,7 @@ class Client(Thread, QObject):
                     return False
 
     def delete_contact(self, del_contact):
+        """Метод удаления Контакта Пользователя"""
         with thread_lock:
             message_out = self.create_message(DEL_CONTACT, self.nickname, contact=del_contact)
             send_message(self.connect, message_out)
@@ -237,6 +205,7 @@ class Client(Thread, QObject):
                     return False
 
     def send_message(self, text, contact):
+        """Метод отправки сообщения"""
         with thread_lock:
             message = self.create_message(MESSAGE, self.nickname, text, contact)
             send_message(self.connect, message)
@@ -245,6 +214,7 @@ class Client(Thread, QObject):
 
 @log
 def arg_data():
+    """Функция парсер аргуметов переданых при старте Приложения Пользователя в комендной строке"""
     parse = argparse.ArgumentParser()
     parse.add_argument('-i', default=DEFAULT_IP, help='IP adress', nargs='?')
     parse.add_argument('-p', default=DEFAULT_PORT, help='PORT', type=int, nargs='?')
@@ -281,7 +251,7 @@ if __name__ == '__main__':
     #     print(f'data = {nickname}, {password}')
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    key_file = os.path.join(dir_path, f'{nickname}')
+    key_file = os.path.join(dir_path, f'{nickname}.key')
 
     if not os.path.exists(key_file):
         keys = RSA.generate(2048, os.urandom)

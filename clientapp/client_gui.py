@@ -8,7 +8,7 @@ import sys
 
 
 class MainWindow(QMainWindow):
-
+    """Класс главного окна пользователя"""
     def __init__(self, database, client):
         super().__init__()
         self.database = database
@@ -71,6 +71,7 @@ class MainWindow(QMainWindow):
 
     # Загрузка списка Контактов
     def load_contacts(self):
+        """Метод загрузки контактов пользователя из Базы данных"""
         contacts = self.database.get_contacts()
         contacts_model = QStandardItemModel()
         contacts_model.setHorizontalHeaderLabels(['Nickname', ' '])
@@ -91,6 +92,7 @@ class MainWindow(QMainWindow):
         self.contact_table.resizeColumnsToContents()
 
     def contact_add(self):
+        """Метод добавления нового контакта пользователя"""
         global add_contact
         add_contact = NewContact(self.database, self.client)
         add_contact.exec()
@@ -98,6 +100,7 @@ class MainWindow(QMainWindow):
         self.load_contacts()
 
     def contact_delete(self):
+        """Метод удаления контакта пользователя"""
         contact = self.contact_table.currentIndex().data()
         if contact:
             if self.message_window.question(self,
@@ -110,12 +113,14 @@ class MainWindow(QMainWindow):
                 self.load_contacts()
 
     def select_contact(self):
+        """Метод выбора контакта пользователя для открытия чата с ним"""
         self.active_chat = self.contact_table.currentIndex().data()
         self.label_messages.setText(f'Чат с пользователем - {self.active_chat}')
         self.load_messages_list()
 
     # Загрузка истории сообщений с выбранным контактом
     def load_messages_list(self):
+        """Метод загрузки истории сообщений с контактом"""
         if self.active_chat:
             self.text_new_message.setEnabled(True)
         else:
@@ -137,6 +142,7 @@ class MainWindow(QMainWindow):
         self.messages_list.scrollToBottom()
 
     def send_message(self):
+        """Метод отправкии сообщения контакту"""
         message = self.text_new_message.toPlainText()
         if message:
             self.text_new_message.clear()
@@ -146,6 +152,7 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot(str)
     def receive_message(self, contact):
+        """Метод получения сообщений"""
         if not self.active_chat == contact and not self.database.check_new_messages(contact):
             self.database.new_message_set(contact)
             self.load_contacts()
@@ -155,22 +162,25 @@ class MainWindow(QMainWindow):
 
     @pyqtSlot()
     def connection_lost(self):
-        self.message_window.critical(self, 'Ошибка!!!', 'Потеряно ссоединение!')
+        """Метод закрытия приложения пользователя при потере соединения с сервером."""
+        self.message_window.critical(self, 'Ошибка!!!', 'Потеряно соединение!')
         self.close()
 
     @pyqtSlot(str)
     def new_contact(self, nickname: str) -> None:
+        """Метод добавление нового контакта пользователя по средствам слота pyqtSlot. Сигнал генерируется emit() """
         self.client.add_contact(nickname)
         self.load_contacts()
 
     def connect_signals(self):
+        """Метод подключения слотов pyqtSlot. Для отлавливания сгенерированных emit() сигналов"""
         self.client.signal_new_message.connect(self.receive_message)
         self.client.connection_lost.connect(self.connection_lost)
         self.client.signal_new_contact.connect(self.new_contact)
 
 
 class EnterWindow(QDialog):
-
+    """Класс окна входа (логин, пароль) в приложение пользователя"""
     def __init__(self):
         super().__init__()
         self.nickname = ''
@@ -205,6 +215,7 @@ class EnterWindow(QDialog):
         self.show()
 
     def enter(self):
+        """Метод проверки корректности ввода логина пользователя"""
         if not self.edit_nickname.text():
             message = QMessageBox()
             message.warning(self, 'Ошибка!!!', 'Не верное имя пользователя')
@@ -215,6 +226,7 @@ class EnterWindow(QDialog):
 
 
 class NewContact(QDialog):
+    """Класс окна добавления нового контакта пользователя"""
     def __init__(self, database, client):
         super().__init__()
         self.database = database
@@ -242,6 +254,7 @@ class NewContact(QDialog):
         self.btn_cancel.clicked.connect(self.close)
 
     def add_contact(self):
+        """Метод добавления нового контакта пользователя"""
         message = QMessageBox()
         if self.client.add_contact(self.edit_nickname.text()):
             message.information(self, 'Новый Контакт', 'Добавлено')
