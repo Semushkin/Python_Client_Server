@@ -1,4 +1,5 @@
 import hmac
+import json
 import os.path
 import sys
 import logging
@@ -120,11 +121,12 @@ class Client(Thread, QObject):
                     self.connect.settimeout(1)
                     self.validation(receive_message(self.connect))
                 except OSError as err:
-                    if not err.errno:
-                        pass
-                    else:
+                    if err.errno:
                         self.close_program = True
                         self.connection_lost.emit()
+                except (ConnectionError, ConnectionAbortedError, ConnectionResetError, json.JSONDecodeError):
+                    self.close_program = True
+                    self.connection_lost.emit()
 
     @staticmethod
     @log
