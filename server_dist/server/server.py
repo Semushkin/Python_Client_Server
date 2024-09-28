@@ -249,8 +249,8 @@ class Server(Thread, metaclass=ServerVerifier):
 if __name__ == '__main__':
     """Запуск сервера"""
     config = configparser.ConfigParser()
-    path = os.path.dirname(os.path.realpath(__file__))
-    config.read(f"{path}/{'serverapp.ini'}")
+    path = os.getcwd()
+    config.read(f"{path}/{'server.ini'}")
     database = DataBase()
 
     ip, port = arg_data()
@@ -288,17 +288,17 @@ if __name__ == '__main__':
     def server_config():
         global config_window
         config_window = ConfigWindow()
-        config_window.db_path.insert(config['SETTINGS']['Database_path'])
-        config_window.db_file.insert(config['SETTINGS']['Database_file'])
-        config_window.port.insert(config['SETTINGS']['Default_port'])
+        config_window.db_path.insert(config['SETTINGS']['database_path'])
+        config_window.db_file.insert(config['SETTINGS']['database_file'])
+        config_window.port.insert(config['SETTINGS']['default_port'])
         config_window.ip.insert(config['SETTINGS']['Listen_Address'])
         config_window.save_btn.clicked.connect(save_server_config)
 
     def save_server_config():
         global config_window
         message = QMessageBox()
-        config['SETTINGS']['Database_path'] = config_window.db_path.text()
-        config['SETTINGS']['Database_file'] = config_window.db_file.text()
+        config['SETTINGS']['database_path'] = config_window.db_path.text()
+        config['SETTINGS']['database_file'] = config_window.db_file.text()
         try:
             port = int(config_window.port.text())
         except ValueError:
@@ -306,7 +306,7 @@ if __name__ == '__main__':
         else:
             config['SETTINGS']['Listen_Address'] = config_window.ip.text()
             if 1023 < port < 65536:
-                config['SETTINGS']['Default_port'] = str(port)
+                config['SETTINGS']['default_port'] = str(port)
                 with open('server.ini', 'w') as conf:
                     config.write(conf)
                     message.information(config_window, 'OK', 'Настройки успешно сохранены!')
